@@ -1,3 +1,9 @@
+# Aventeurier AI
+
+## Project Description
+
+Merchandisers at travel agencies often struggle to discover trendy and uncharted travel products. Social media platforms serve as a goldmine of travel trends and emerging destinations, offering valuable information for merchandisers. However, manually tracking social media posts is time-consuming and inefficient due to their transient nature and lack of structured data, leading to missed opportunities and outdated travel offerings.
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
