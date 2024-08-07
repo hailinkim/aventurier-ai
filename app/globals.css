@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .btn{
+        @apply flex-1 justify-center rounded-full text-xs;
+    }
+    .btn-primary {
+        @apply bg-sky-500 text-white px-16 items-center w-full py-2 mt-2;
+    }
+    .btn-toggle-default {
+        @apply text-neutral-500 w-full px-4;
+    }
+    .btn-toggle {
+        @apply bg-white text-neutral-800 px-4;
+    }
+    .login-input{
+        @apply justify-center items-start px-4 py-2 rounded-md border border-solid bg-neutral-50 border-black border-opacity-10 max-md:pr-5
+    }
+    .arrow{
+        @apply opacity-60 absolute top-1/2
+    }
+    .left{
+        @apply left-2
+    }
+    .right{
+        @apply right-2
+    }
+}
+
+.cursor{
+    cursor: pointer;
+}
+.arrow-left-rotate{
+    transform: rotate(-180deg);
+}
+.sm{
+    width:10px;
+    height:10px;
+}
+.md{
+    width: 20px;
+    height: 20px;
+}
+.lg{
+    width:30px;
+    height:30px;
+}
+.truncate-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Number of lines to show */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 3em; /* Adjust based on line height and number of lines */
+}
+.map-content {
+    transition: all 0.3s ease-in-out; /* Smooth transition for resizing */
+}
+
+.expanded {
+    width: 100%; /* Example to fill the screen or container */
+    height: 100%; /* Larger height when expanded */
+    position: absolute; /* Optional: if you need it to overlap other content */
+    top: 0;
+    left: 0;
+    z-index: 10;
+}
+
+.max-md:w-full {
+    width: 100%;
+    height: 300px; /* Default smaller height */
+}
