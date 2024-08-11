@@ -15,12 +15,16 @@ import json
 from typing import List
 from langchain_core.documents import Document
 from langchain_upstage import UpstageGroundednessCheck
-from langgraph.graph import END, StateGraph
-from flask import Flask, request, Response, stream_with_context
+from langgraph.graph import END, StateGraph, START
+from flask import Flask, request, Response, stream_with_context, jsonify
 import time
 import langchain
 from langchain_core.messages import HumanMessage
 import gradio as gr
+from langchain.tools import tool
+from langgraph.prebuilt import ToolExecutor
+from langchain_core.messages import ToolMessage
+from langgraph.prebuilt import ToolInvocation
 langchain.verbose = True
 
 load_dotenv()
@@ -33,10 +37,9 @@ os.environ["MONGODB_ATLAS_CLUSTER_URI"] = os.getenv("NEXT_PUBLIC_MONGO_URI")
 
 client = MongoClient(os.environ["MONGODB_ATLAS_CLUSTER_URI"]) 
 not_grounded_count = 0
-# flask_app = Flask(__name__)
+flask_app = Flask(__name__)
 
-
-# @flask_app.route('/api/python')
+@flask_app.route('/api/python', methods=['POST'])
 def chat():
     DB_NAME = "langchain_db"
     COLLECTION_NAME = "test"
@@ -72,6 +75,7 @@ def chat():
         question: str
         answer: str
         groundedness: str
+
 
     # def generate_few_shot():
     #     examples = []
@@ -109,11 +113,33 @@ def chat():
             
             Question: {question}
             """
+    
+    @tool
+    def searchPosts(query):
+        """
+        return posts related to the query
+        """
+        results = vectorstore.similarity_search_with_score(query, k=3)
+        return results
+    
+    @tool
+    def calculator(a: int, b: int) -> int:
+        """Adds a and b.
+
+        Args:
+            a: first int
+            b: second int
+        """
+        return a + b
+    
     prompt = ChatPromptTemplate.from_template(tmpl)
     model = ChatUpstage(temperature=0.3)
+    tools= [searchPosts, calculator]
+    tool_executor = ToolExecutor(tools)
 
-    # Solar model answer generation, given the context and question
-    model_chain = prompt | model | StrOutputParser()
+    model = model.bind_tools(tools)
+
+    # model_chain = prompt | model | StrOutputParser()
 
     def generate_examples():
         examples = []
@@ -162,28 +188,63 @@ def chat():
         return RagState(groundedness=response)
 
     def groundedness_condition(state: RagState) -> RagState:
-        return state['groundedness']
+        return state['groundedness']    
+    
+    def call_model(state: RagState) -> RagState:
+        response = model.invoke(state["question"])  
+        return RagState(answer=response)
+    
+    def call_tool(state: RagState) -> RagState:
+        response = state["answer"]
+        print(response.tool_calls)
+        if response.tool_calls:
+            tool_call = response.tool_calls[0]
+            action = ToolInvocation(
+                tool=tool_call["name"],
+                tool_input=tool_call["args"],
+            )
+            # We call the tool_executor and get back a response
+            response = tool_executor.invoke(action)
+            # We use the response to create a FunctionMessage
+            function_message = ToolMessage(
+                content=str(response), name=action.tool, tool_call_id=tool_call["id"]
+            )
+        return RagState(answer=function_message)
 
     workflow = StateGraph(RagState)
-    workflow.add_node("retrieve", retrieve)
-    workflow.add_node("model", model_answer)
-    workflow.add_node("groundedness_check", groundedness_check)
+    # workflow.add_node("retrieve", retrieve)
+    # workflow.add_node("model", model_answer)
+    # workflow.add_node("groundedness_check", groundedness_check)
 
-    workflow.add_edge("retrieve", "model")
-    workflow.add_edge("model", "groundedness_check")
-    workflow.add_conditional_edges("groundedness_check", groundedness_condition, {
-        "grounded": END,
-        "notFound": END,
-        "notGrounded": "model",
-        "notSure": "model",
-    })
-    workflow.set_entry_point("retrieve")
+    # workflow.add_edge("retrieve", "model")
+    # workflow.add_edge("model", "groundedness_check")
+    # workflow.add_conditional_edges("groundedness_check", groundedness_condition, {
+    #     "grounded": END,
+    #     "notFound": END,
+    #     "notGrounded": "model",
+    #     "notSure": "model",
+    # })
+    # workflow.set_entry_point("retrieve")
+
+    workflow.add_node("agent", call_model)
+    workflow.add_node("action", call_tool)
+    workflow.add_edge("agent", "action")
+    workflow.set_entry_point("agent")
 
     app = workflow.compile()
 
-    # def run_workflow(question, state=None):
+
+    data = request.json
+    question = data.get('question', '')
+    inputs = {"question": question}
+    response = app.invoke(inputs)["answer"]
+    return str(response)
+    # def run_workflow(question,history):
     #     inputs = {"question": question}
-    #     return app.invoke(inputs)["answer"]
+    #     response = app.invoke(inputs)["answer"]
+    #     for i in range(len(response)):
+    #         time.sleep(0.01)
+    #         yield response[: i + 1]
 
     # demo = gr.ChatInterface(
     #     run_workflow,
@@ -197,50 +258,48 @@ def chat():
     # )
     
     # demo.launch()
-    def run_workflow(question, state=None):
-        inputs = {"question": question}
-        return app.invoke(inputs)["answer"]
+    # def run_workflow(question, state=None):
+    #     inputs = {"question": question}
+    #     return app.invoke(inputs)["answer"]
 
-    with gr.Blocks() as demo:
-        chatbot = gr.Chatbot()
-        msg = gr.Textbox()
-        clear = gr.Button("Clear")
-        stop = gr.Button("Stop")  # Add a Stop button
+    # with gr.Blocks() as demo:
+    #     chatbot = gr.Chatbot()
+    #     msg = gr.Textbox()
+    #     clear = gr.Button("Clear")
+    #     stop = gr.Button("Stop")  # Add a Stop button
 
-        stop_typing = False  # Flag to control the typing process
+    #     stop_typing = False  # Flag to control the typing process
 
-        def user(user_message, history):
-            global stop_typing
-            stop_typing = False 
-            # Add user message to the chat history
-            return "", history + [[user_message, None]]
+    #     def user(user_message, history):
+    #         global stop_typing
+    #         stop_typing = False 
+    #         # Add user message to the chat history
+    #         return "", history + [[user_message, None]]
 
-        def bot(history):
-            global stop_typing
-            # Use run_workflow to get the bot's response
-            bot_response = run_workflow(history[-1][0])  # Fetch response from the app
-            history[-1][1] = ""
-            for character in bot_response:
-                if stop_typing:
-                    break  # Exit the loop if the stop button is pressed
-                history[-1][1] += character
-                time.sleep(0.01)  # Simulate typing by sleeping for 50ms between characters
-                yield history  # Yield the updated history to stream the output
+    #     def bot(history):
+    #         global stop_typing
+    #         # Use run_workflow to get the bot's response
+    #         bot_response = run_workflow(history[-1][0])  # Fetch response from the app
+    #         history[-1][1] = ""
+    #         for character in bot_response:
+    #             if stop_typing:
+    #                 break  # Exit the loop if the stop button is pressed
+    #             history[-1][1] += character
+    #             time.sleep(0.01)  # Simulate typing by sleeping for 50ms between characters
+    #             yield history  # Yield the updated history to stream the output
 
-        def stop_typing_func():
-            global stop_typing
-            stop_typing = True  # Set the flag to stop the bot typing
+    #     def stop_typing_func():
+    #         global stop_typing
+    #         stop_typing = True  # Set the flag to stop the bot typing
 
-        # Submit user input to the `user` function, then pass the result to the `bot` function for response
-        msg.submit(user, [msg, chatbot], [msg, chatbot], queue=False).then(
-            bot, chatbot, chatbot
-        )
-        stop.click(stop_typing_func)  # Stop the bot from typing
-        # Clear the chat history
-        clear.click(lambda: None, None, chatbot, queue=False)
+    #     # Submit user input to the `user` function, then pass the result to the `bot` function for response
+    #     msg.submit(user, [msg, chatbot], [msg, chatbot], queue=False).then(
+    #         bot, chatbot, chatbot
+    #     )
+    #     stop.click(stop_typing_func)  # Stop the bot from typing
+    #     # Clear the chat history
+    #     clear.click(lambda: None, None, chatbot, queue=False)
 
-    # Launch the Gradio interface
-    demo.launch()
+    # # Launch the Gradio interface
+    # demo.launch()
 
-if __name__ == '__main__':
-    chat()
