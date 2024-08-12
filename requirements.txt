@@ -9,4 +9,3 @@ langgraph==0.2.3
 llama_index==0.10.64
 pydantic==2.8.2
 pymongo==4.8.0
-python-dotenv==1.0.1

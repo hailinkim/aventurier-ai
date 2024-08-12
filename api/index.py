@@ -1,4 +1,4 @@
-from dotenv import load_dotenv 
+# from dotenv import load_dotenv 
 import os
 from pymongo.mongo_client import MongoClient
 from pymongo.operations import SearchIndexModel
@@ -33,7 +33,7 @@ from typing import List
 
 langchain.verbose = True
 
-load_dotenv()
+# load_dotenv()
 
 os.environ["UPSTAGE_API_KEY"] = os.getenv("UPSTAGE_API_KEY")
 os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
