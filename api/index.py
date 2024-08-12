@@ -10,7 +10,10 @@ from langchain_upstage import UpstageEmbeddings, ChatUpstage
 from langchain_community.document_loaders.mongodb import MongodbLoader
 from typing import TypedDict
 from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
+from langchain.prompts import ChatPromptTemplate
+# from langchain_core.output_parsers import JsonOutputParser
+# from langchain_core.prompts import PromptTemplate
+from pydantic import BaseModel, Field, ValidationError
 import json
 from typing import List
 from langchain_core.documents import Document
@@ -19,16 +22,11 @@ from langgraph.graph import END, StateGraph, START
 from flask import Flask, request, Response, stream_with_context, jsonify
 import time
 import langchain
-from langchain_core.messages import HumanMessage
-import gradio as gr
 from langchain.tools import tool
 from langgraph.prebuilt import ToolExecutor
 from langchain_core.messages import ToolMessage
 from langgraph.prebuilt import ToolInvocation
 from pymongo.errors import BulkWriteError
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.prompts import PromptTemplate
-from pydantic import BaseModel, Field, ValidationError
 from typing import List
 
 langchain.verbose = True
