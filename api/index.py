@@ -1,3 +1,6 @@
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'util')))
+from db import load_documents
 from dotenv import load_dotenv 
 import os
 from pymongo.mongo_client import MongoClient
@@ -5,7 +8,6 @@ from pymongo.operations import SearchIndexModel
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_upstage import UpstageEmbeddings, ChatUpstage
 from langchain_community.document_loaders.mongodb import MongodbLoader
-from app.lib.db import load_documents
 from typing import TypedDict
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
