@@ -8,7 +8,7 @@ from typing import Dict
 
 load_dotenv() 
 
-def load_documents():
+def load_documents(username):
     # Step 1: Connect to MongoDB
     client = MongoClient(os.getenv("NEXT_PUBLIC_MONGO_URI"))  # Adjust the URI as needed
 
@@ -18,18 +18,21 @@ def load_documents():
     # Step 3: Access the Collection
     user_collection = db['users'] 
 
-    user = user_collection.find({'username': "celine__lover"}, {"_id": 1})
+    user = user_collection.find({'username': username}, {"_id": 1})
 
     for document in user:
         user_id = document['_id']
 
     post_collection = db['posts'] 
     posts = post_collection.find({'user': user_id}, {'_id':1, 'caption': 1, 'location.name': 1, 'location.lng':1, 'location.lat':1})
+    
     def generate_metadata(post: Dict) -> Dict:
         if 'location' in post:
             return {'location': post['location']}
+            # return {'location': post['location'], 'id': str(post['_id'])}
         else:
             return {}
+            # return {'id': str(post['_id'])}
     def remove_emoji(text):
         emoji_pattern = re.compile("["
                 u"\U0001F600-\U0001F64F"  # emoticons
@@ -44,7 +47,25 @@ def load_documents():
                 u"\U00002700-\U000027BF"  # Dingbats
                 "]+", flags=re.UNICODE)
         return emoji_pattern.sub(r'', text)
-    
-    documents = [Document(page_content=remove_emoji(post['caption']), metadata=generate_metadata(post), id_ = str(post['_id'])) for post in posts]
+
+    document_ids = []
+    documents = []
+
+    for post in posts:
+        # Extract the document ID
+        doc_id = str(post['_id'])  # Ensure it's a string, or format it as needed
+        # Generate metadata for the document (assuming `generate_metadata` is defined)
+        metadata = generate_metadata(post)
+        
+        # Remove emoji from the caption (assuming `remove_emoji` is defined)
+        cleaned_caption = remove_emoji(post['caption'])
+        
+        # Create the Document object
+        document = Document(page_content=cleaned_caption, metadata=metadata)
+        
+        # Append the ID and the Document to their respective lists
+        document_ids.append(doc_id)
+        documents.append(document)
+    # documents = [Document(page_content=remove_emoji(post['caption']), metadata=generate_metadata(post)) for post in posts]
     # documents = [Document(text=remove_emoji(post['caption']), metadata=generate_metadata(post), id_ = str(post['_id'])) for post in posts]
-    return documents
+    return document_ids, documents

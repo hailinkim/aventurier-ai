@@ -43,9 +43,9 @@ os.environ["MONGODB_ATLAS_CLUSTER_URI"] = os.getenv("NEXT_PUBLIC_MONGO_URI")
 
 client = MongoClient(os.environ["MONGODB_ATLAS_CLUSTER_URI"]) 
 not_grounded_count = 0
-flask_app = Flask(__name__)
+app = Flask(__name__)
 
-@flask_app.route('/api/python', methods=['POST'])
+@app.route('/api/python', methods=['POST'])
 def chat():
     class AgentState(TypedDict):
         """
@@ -359,6 +359,6 @@ def chat():
     workflow.add_edge("agent", "action")
     workflow.set_entry_point("agent")
 
-    app = workflow.compile()
-    response = app.invoke(inputs)["answer"]
+    agent_app = workflow.compile()
+    response = agent_app.invoke(inputs)["answer"]
     return response
