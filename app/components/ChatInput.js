@@ -33,4 +33,5 @@ const ChatInput = React.memo(({ onSend, onStop, isStreaming }) => {
   );
 });
 
+ChatInput.displayName = "ChatInput";
 export default ChatInput;
