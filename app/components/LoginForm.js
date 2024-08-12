@@ -5,6 +5,7 @@ import {useFormState} from 'react-dom';
 import '@/globals.css';
 import { set } from 'mongoose';
 import {login} from '@/actions';
+import Chat from '@/components/Chat';
 
 const initialState = {
     message: '',
@@ -14,11 +15,8 @@ export default function LoginForm(){
     console.count('LoginForm called');
     const [state, formAction] = useFormState(login, initialState);
     if(state.message === 'Success'){
-        return(
-            <div>
-                <h1>Success</h1>
-            </div>
-        )}
+        return <Chat username={state.username} />;
+    }
     
     return (
         <div>
