@@ -4,10 +4,8 @@ from pymongo.mongo_client import MongoClient
 from pymongo.operations import SearchIndexModel
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_upstage import UpstageEmbeddings, ChatUpstage
-import os
 from langchain_community.document_loaders.mongodb import MongodbLoader
-from db import load_documents
-import pprint
+from app.lib.db import load_documents
 from typing import TypedDict
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
