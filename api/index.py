@@ -28,7 +28,12 @@ from langchain_core.messages import ToolMessage
 from langgraph.prebuilt import ToolInvocation
 from pymongo.errors import BulkWriteError
 from typing import List
-
+import asyncio
+from langgraph.prebuilt import ToolNode
+from langchain_core.messages import HumanMessage
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 langchain.verbose = True
 
 load_dotenv()
@@ -41,10 +46,9 @@ os.environ["MONGODB_ATLAS_CLUSTER_URI"] = os.getenv("NEXT_PUBLIC_MONGO_URI")
 
 client = MongoClient(os.environ["MONGODB_ATLAS_CLUSTER_URI"]) 
 not_grounded_count = 0
-app = Flask(__name__)
+# app = Flask(__name__)
 
-@app.route('/api/python', methods=['POST'])
-def chat():
+async def chat(username, question):
     class AgentState(TypedDict):
         """
         Represents the agent state
@@ -53,13 +57,13 @@ def chat():
             question: question asked by the user
             answer: generated answer to the question
         """
-        question: str
+        messages: str
         answer: str
     
-    data = request.json   
-    question = data.get('question', '')
-    inputs = {"question": question}
-    username = data.get('username', '')
+    # data = request.json   
+    # question = data.get('question', '') 
+    # inputs = {"question": question}
+    # username = data.get('username', '')
 
     DB_NAME = "langchain_db"
     COLLECTION_NAME = "test"
@@ -188,7 +192,7 @@ def chat():
         #     partial_variables={"format_instructions": parser.get_format_instructions()},
         # )
         prompt = ChatPromptTemplate.from_template(template)
-        llm = ChatUpstage(temperature=0.3)
+        llm = ChatUpstage(temperature=0.3, streaming=True)
         model_chain = prompt | llm | StrOutputParser()
         retriever = vectorstore.as_retriever(
             search_kwargs={'k': 5}
@@ -318,45 +322,127 @@ def chat():
         return rag_app.invoke(inputs)["answer"]
         # return generate_place_info(rag_app.invoke(inputs)["answer"])
     
-    model = ChatUpstage(temperature=0.3)
+    model = ChatUpstage(temperature=0.3, streaming=True)
     tools= [calculator, searchPlaces]
-    tool_executor = ToolExecutor(tools)
+    tool_executor = ToolNode(tools)
     model = model.bind_tools(tools)
     
-    def call_model(state: AgentState) -> AgentState:
+    def call_model(state: AgentState):
         start_time = time.time()
-        response = model.invoke(state["question"])
+        print("messages: " , state["messages"])
+        response = model.invoke(state["messages"])
         print("tool calling agent response: ", response)
         print("Time taken for tool calling agent: ", time.time() - start_time)
-        return AgentState(answer=response)
+        return {"messages": [response]}
     
-    def call_tool(state: AgentState) -> AgentState:
-        start_time = time.time()
-        response = state["answer"]
-        print(response.tool_calls)
-        if response.tool_calls:
-            tool_call = response.tool_calls[0]
-            action = ToolInvocation(
-                tool=tool_call["name"],
-                tool_input=tool_call["args"],
-            )
-            # We call the tool_executor and get back a response
-            response = tool_executor.invoke(action)
-            print("tool executor response: ", response)
-            # We use the response to create a FunctionMessage
-            function_message = ToolMessage(
-                content=str(response), name=action.tool, tool_call_id=tool_call["id"]
-            )
-            print("time taken for tool calling: ", time.time() - start_time)
-        return AgentState(answer=function_message.content)
+    # def call_tool(state: AgentState) -> AgentState:
+    #     start_time = time.time()
+    #     response = state["answer"]
+    #     print(response.tool_calls)
+    #     if response.tool_calls:
+    #         tool_call = response.tool_calls[0]
+    #         action = ToolInvocation(
+    #             tool=tool_call["name"],
+    #             tool_input=tool_call["args"],
+    #         )
+    #         # We call the tool_executor and get back a response
+    #         response = tool_executor.invoke(action)
+    #         print("tool executor response: ", response)
+    #         # We use the response to create a FunctionMessage
+    #         function_message = ToolMessage(
+    #             content=str(response), name=action.tool, tool_call_id=tool_call["id"]
+    #         )
+    #         print("time taken for tool calling: ", time.time() - start_time)
+    #     return AgentState(answer=function_message.content)
 
     workflow = StateGraph(AgentState)
 
     workflow.add_node("agent", call_model)
-    workflow.add_node("action", call_tool)
+    # workflow.add_node("action", call_tool)
+    workflow.add_node("action", tool_executor)
     workflow.add_edge("agent", "action")
     workflow.set_entry_point("agent")
 
     agent_app = workflow.compile()
-    response = agent_app.invoke(inputs)["answer"]
-    return response
+    # response = agent_app.invoke(inputs)["answer"]
+    # return response
+
+    # inputs = {"question": "부산 빙수 맛집 찾아줘"}
+    inputs = [HumanMessage(content=question)]
+    async for event in agent_app.astream_events({"messages": inputs}, version="v2"):
+        kind = event["event"]
+        if kind == "on_chat_model_stream":
+            content = event["data"]["chunk"].content
+            if content:
+                yield content
+        elif kind == "on_tool_start":
+            print("--")
+            print(
+                f"Starting tool: {event['name']} with inputs: {event['data'].get('input')}"
+            )
+        elif kind == "on_tool_end":
+            print(f"Done tool: {event['name']}")
+            print(f"Tool output was: {event['data'].get('output')}")
+            print("--")
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/api/python")
+async def stream(request: Request):
+    data = await request.json()
+    username = data.get('username', '')
+    question = data.get('messages', '')
+    # question = data.get('messages', '')[0]['content']
+    print("username: ", username)   
+    print("question: ", question)
+    res = chat(username, question)
+    print("chat: ", res)
+    return StreamingResponse(res, media_type="text/event-stream")            
+
+# def async_to_sync_generator(async_gen):
+#     loop = asyncio.new_event_loop()
+#     asyncio.set_event_loop(loop)
+
+#     # Define a wrapper coroutine to run the async generator
+#     async def run_async_gen():
+#         async for item in async_gen:
+#             yield item
+
+#     # Create an iterator for the async generator
+#     gen = loop.run_until_complete(run_async_generator_wrapper(run_async_gen, async_gen))
+#     loop.close()
+#     return gen
+
+# async def run_async_generator_wrapper(run_async_gen, async_gen):
+#     # Create a list to collect items
+#     items = []
+#     async for item in run_async_gen():
+#         items.append(item)
+#     return iter(items)
+
+
+# def stream():
+#     data = request.json   
+#     username = data.get('username', '')
+#     question = data.get('question', '') 
+
+#     # Convert the async generator to a sync generator
+#     sync_gen = async_to_sync_generator(chat(username, question))
+#     return Response(sync_gen, mimetype='text/event-stream')     
+
+# @app.route('/api/python', methods=['POST'])
+# def stream():
+#     data = request.json   
+#     username = data.get('username', '')
+#     question = data.get('question', '') 
+#     return Response(chat(username, question), mimetype='text/event-stream')       
+
+# if __name__ == "__main__":
+#     asyncio.run(chat())
