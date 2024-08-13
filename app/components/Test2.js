@@ -8,7 +8,7 @@ const ChatComponent = () => {
         messages,
         startFetching,
         stopFetching
-    } = useManualServerSentEvents('http://localhost:8000/api/python', {messages: messageText, username: 'celine__lover'});
+    } = useManualServerSentEvents('/api/python', {messages: messageText, username: 'celine__lover'});
 
     // Combine messages and replace '\n\n' with HTML line break '<br /><br />'
     const combinedMessages = useMemo(() => {
