@@ -24,10 +24,15 @@ import time
 import langchain
 from langchain.tools import tool
 from langgraph.prebuilt import ToolExecutor
-from langchain_core.messages import ToolMessage
+from langgraph.prebuilt import ToolNode
+from langchain_core.messages import ToolMessage, HumanMessage
 from langgraph.prebuilt import ToolInvocation
 from pymongo.errors import BulkWriteError
 from typing import List
+import asyncio
+from langgraph.checkpoint.memory import MemorySaver
+from typing_extensions import Annotated, TypedDict
+
 
 langchain.verbose = True
 
@@ -44,7 +49,7 @@ not_grounded_count = 0
 app = Flask(__name__)
 
 @app.route('/api/python', methods=['POST'])
-def chat():
+async def chat():
     class AgentState(TypedDict):
         """
         Represents the agent state
@@ -58,7 +63,6 @@ def chat():
     
     data = request.json   
     question = data.get('question', '')
-    inputs = {"question": question}
     username = data.get('username', '')
 
     DB_NAME = "langchain_db"
@@ -187,6 +191,7 @@ def chat():
         #     template=template,
         #     partial_variables={"format_instructions": parser.get_format_instructions()},
         # )
+
         prompt = ChatPromptTemplate.from_template(template)
         llm = ChatUpstage(temperature=0.3)
         model_chain = prompt | llm | StrOutputParser()
@@ -214,11 +219,17 @@ def chat():
         def format_documents(docs: List[Document]) -> str:
             return "\n".join([doc.page_content for doc in docs])
         
+        def extract_post_id(docs: List[Document]):
+            post_ids = [doc.metadata["_id"] for doc in docs]
+            return post_ids
+        
         # Define functions used in the workflow
         def retrieve(state: RagState) -> RagState:
             start_time = time.time()
             print("query: ", state["question"])
             docs = retriever.invoke(state["question"])
+            global sources 
+            sources = extract_post_id(docs)
             context = format_documents(docs)
             print("context: ", context)
             print("Time taken for retrieval: ", time.time() - start_time)
@@ -318,10 +329,12 @@ def chat():
         return rag_app.invoke(inputs)["answer"]
         # return generate_place_info(rag_app.invoke(inputs)["answer"])
     
+    memory = MemorySaver()
     model = ChatUpstage(temperature=0.3)
     tools= [calculator, searchPlaces]
     tool_executor = ToolExecutor(tools)
     model = model.bind_tools(tools)
+    # tool_node= ToolNode(tools)
     
     def call_model(state: AgentState) -> AgentState:
         start_time = time.time()
@@ -357,6 +370,43 @@ def chat():
     workflow.add_edge("agent", "action")
     workflow.set_entry_point("agent")
 
-    agent_app = workflow.compile()
-    response = agent_app.invoke(inputs)["answer"]
-    return response
+    agent_app = workflow.compile(checkpointer=memory)
+    inputs = {"question": question}
+    config = {"configurable": {"thread_id": "2"}}
+    response = agent_app.invoke(inputs, config)["answer"]
+    return {"response": response, "sources": sources}
+
+
+    # async for event in agent_app.astream_events({"question": inputs}, version="v2"):
+    #     kind = event["event"]
+    #     if kind == "on_chat_model_stream":
+    #         content = event["data"]["chunk"].content
+    #         if content:
+    #             print(content)
+    #             print("|")
+    #             yield content
+    #     elif kind == "on_tool_start":
+    #         print("--")
+    #         print(
+    #             f"Starting tool: {event['name']} with inputs: {event['data'].get('input')}"
+    #         )
+    #     elif kind == "on_tool_end":
+            # print(f"Done tool: {event['name']}")
+            # print(f"Tool output was: {event['data'].get('output')}")
+            # print("--")
+
+                    
+# @app.route('/api/python', methods=['POST'])
+# async def streamed_proxy():
+#     data = request.json   
+#     print(data)
+#     question = data.get('question', '')
+#     username = data.get('username', '')
+#     test = [chunk async for chunk in chat(question, username)]
+
+#     # Wrapping the async generator with stream_with_context
+#     return Response(test, content_type='text/event-stream')
+
+    
+
+# asyncio.run(streamed_proxy())

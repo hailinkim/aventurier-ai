@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ChatStream from '@/components/ChatStream';
 import ChatInput from '@/components/ChatInput';
+// import Post from '@/db/models/Post';
 
 export default function Chat(props) {
   const [messages, setMessages] = useState([]);
@@ -14,22 +15,6 @@ export default function Chat(props) {
       },
       body: JSON.stringify({ username:props["username"], question: query }),
     });
-    // const text = await response.text();
-    // console.log(text);
-    const response_json = await response.json();
-    const place_info = response_json["places"];
-    let text = "";
-    for (let i = 0; i < place_info.length; i++){
-      text += `${i+1}. ` + place_info[i]["name"] + `(${place_info[i]["address"]}): ` + `${place_info[i]["summary"]}.`;
-      if (i !== place_info.length - 1){
-        text += "\n"; 
-      }
-    }
-    setMessages((prevMessages) => {
-      const newMessages = [...prevMessages];
-      newMessages[newMessages.length - 1].text = text; // Update the last message (AI response)
-      return newMessages;
-    });
     // const reader = response.body.getReader();
     // const decoder = new TextDecoder('utf-8');
     // let done = false;
@@ -39,13 +24,60 @@ export default function Chat(props) {
     //   const { value, done: readerDone } = await reader.read();
     //   done = readerDone;
     //   text += decoder.decode(value, { stream: true });
+    //   console.log(text)
     //   setMessages((prevMessages) => {
     //     const newMessages = [...prevMessages];
     //     newMessages[newMessages.length - 1].text = text; // Update the last message (AI response)
     //     return newMessages;
     //   });
     // }
-    console.log(text);
+    // const text = await response.text();
+    // console.log(text);
+    const response_json = await response.json();
+    console.log(response_json);
+    const llm_response = response_json["response"];
+    const llm_sources = response_json["sources"];
+    console.log(llm_sources);
+    const place_info = JSON.parse(llm_response)["places"];
+    let text = "";
+    for (let i = 0; i < place_info.length; i++){
+      text += `${i+1}. ` + place_info[i]["name"] + `(${place_info[i]["address"]}): ` + `${place_info[i]["summary"]}. \n`;
+      // if (i !== place_info.length - 1){
+      //   text += "\n"; 
+      // }
+    }
+    
+    // const objectIds = sources.map(id => mongoose.Types.ObjectId(id));
+    try{    
+      // const urls = await Post.find(
+      //   { _id: { $in: objectIds } },
+      //   { url: 1} );
+      text += "\n Sources: \n";
+      const urls = ["https://www.instagram.com/p/C5yNPPlp_xN/"]
+      for(let i=0; i<urls.length;i++){
+        if (urls && urls[i]) {
+          const url = urls[i];
+          const hyperlink = `<a href="${url}" target="_blank" className="underline hover:text-blue-800">[Post ${i+1}]</a>`;
+          text += `${hyperlink}`;
+          if(i !== urls.length -1){
+            text+="\n";
+          }
+        }
+      }
+    } catch(error){
+      console.log("mongo db error: ", error)
+    }
+    
+    setMessages((prevMessages) => {
+      const newMessages = [...prevMessages];
+      newMessages[newMessages.length - 1].text = text; // Update the last message (AI response)
+      return newMessages;
+    });
+    // setSources((prevSources) => {
+    //   const newSources = [...prevSources];
+    //   newSources[newSources.length - 1]= "https://www.instagram.com/p/C5yNPPlp_xN/"; // Update the last message (AI response)
+    //   return newSources;
+    // });
   };
 
   const handleSend = useCallback((userInput) => {
@@ -91,6 +123,9 @@ export default function Chat(props) {
   useEffect(() => {
     console.log(isStreaming);
   }, [isStreaming]);
+  useEffect(() => {
+    console.log(sources);
+  }, [sources]);
 
 
   return (
@@ -123,6 +158,11 @@ export default function Chat(props) {
             )}
           </div>
         ))}
+        {/* {sources.map((source, index)=> (
+          <div className={'my-2 p-2 rounded-lg max-w-[80%] whitespace-pre-wrap bg-gray-100 text-black self-start'}>
+            <a href="https://www.instagram.com/p/C5yNPPlp_xN/" target="_blank">Post {index}</a>
+          </div>
+        ))} */}
         </div>
       </div>
       <ChatInput onSend={handleSend} onStop={handleStop} isStreaming={isStreaming}/>
