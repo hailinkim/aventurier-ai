@@ -95,7 +95,7 @@ export default function Chat(props) {
 
   return (
     <div className="flex flex-col h-screen p-4">
-      <h1 className="mb-4 text-2xl font-bold">Chatbot Streaming Example</h1>
+      <h1 className="mb-4 text-2xl font-bold">Aventurier</h1>
       <div className="flex-grow">
         <div className="flex flex-col border border-gray-300 p-4 rounded-lg h-full overflow-y-auto">
         {messages.map((message, index) => (

@@ -1,13 +1,13 @@
 'use client';
 
 // import Fast from './components/Fast';
-// import LoginForm from '@/components/LoginForm';
-import ChatComponent from '@/components/Test2';
-export default async function Home() {
+import LoginForm from '@/components/LoginForm';
+// import ChatComponent from '@/components/Test2';
+export default function Home() {
   return (
     // <Fast/>
-    <ChatComponent/>
-      // <LoginForm/>
+    // <ChatComponent/>
+      <LoginForm/>
   );
 }
 
@@ -41,5 +41,28 @@ export default async function Home() {
 //         </form>
 //       </div>
 //     </main>
+//   );
+// }
+// import { useCompletion } from "ai/react";
+// import { set } from 'mongoose';
+
+// export default function Home() {
+//   const { input, completion, handleInputChange, handleSubmit, isLoading } = useCompletion({
+//     api: "/api/python",
+//     streamProtocol: 'text',
+//     headers: {
+//       "Content-Type": "application/json",
+//     },
+//     body: { username: "celine__lover" },
+//   });
+//   return (
+//     <div>
+//       <form onSubmit={handleSubmit}>
+//         <label htmlFor="ask-input">Ask something:</label>
+//         <input id="ask-input" type="text" value={input} onChange={handleInputChange} />
+//         <button type="submit">POST</button>
+//       </form>
+//       <div>{completion}</div>
+//     </div>
 //   );
 // }
