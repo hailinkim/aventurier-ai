@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 
 const ChatInput = React.memo(({ onSend, onStop, isStreaming }) => {
   const [inputValue, setInputValue] = useState('');
@@ -7,12 +7,23 @@ const ChatInput = React.memo(({ onSend, onStop, isStreaming }) => {
     setInputValue(e.target.value);
   }, []);
 
-  const handleSend = () => {
+  const handleSend = useCallback(() => {
     if (inputValue.trim()) {
       onSend(inputValue);
       setInputValue(''); // Clear the input field
     }
-  };
+  }, [inputValue, onSend]);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.nativeEvent.isComposing) {
+      e.stopPropagation();
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevent the default action (submitting the form, etc.)
+      handleSend();
+    }
+  }, [handleSend]);
 
   return (
     <div className="chat-input mt-4 flex">
@@ -20,6 +31,7 @@ const ChatInput = React.memo(({ onSend, onStop, isStreaming }) => {
         type="text"
         value={inputValue}
         onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
         placeholder="Type your message here..."
         className="p-2 flex-grow border border-gray-300 rounded mr-2"
       />
