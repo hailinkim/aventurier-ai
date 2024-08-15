@@ -6,7 +6,7 @@ import User from '@/db/models/User';
 import Post from '@/db/models/Post';
 import initializeRedis from '@/lib/redis-client';
 import { cookies } from 'next/headers';
-
+import { ocr } from './lib/ocr';
 // import { createSession, getSession, createCookies} from '@/lib/sessionHandler.js';
 
 const ig = new IgApiClient();
@@ -118,7 +118,7 @@ async function fetchSavedFeed(username) {
                 }
                 return true;
             });
-        
+            console.log("items length: ", newItems.length);
             // if (newItems.length < items.length) { 
             //     stopFetching = true;
             // }
@@ -135,36 +135,38 @@ async function fetchSavedFeed(username) {
     }
 }
 
+// const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export async function login(prevState, formData) {
     try {
         const username = formData.get('username');
         const password = formData.get('password');
-        // const sessionRestored = await getSession(username);
-        // if (!sessionRestored) {
-        //     ig.state.generateDevice(username);
-        //     await ig.simulate.preLoginFlow();
-        //     await ig.account.login(username, password);
-        //     process.nextTick(async () => await ig.simulate.postLoginFlow());
-        //     const user = await ig.user.searchExact(username);
-        //     const userId = user.pk;
-        //     await addUser(userId, username);
-        //     const sessionId = ig.state.uuid;
-        //     await createCookies(username, sessionId);
-        //     await createSession(userId, sessionId, ig);
-        // }
-        // const res = await fetchSavedFeed(username);
-        // if(res.message === "Success" && res.items){
-        //     const itemsWithOCR = await ocr(res.items);
-        //     // await addPost(username, itemsWithOCR);
-        // }
-        return { message: "Success", username: username };
+        const sessionRestored = await getSession(username);
+        if (!sessionRestored) {
+            ig.state.generateDevice(username);
+            await ig.simulate.preLoginFlow();
+            await ig.account.login(username, password);
+            process.nextTick(async () => await ig.simulate.postLoginFlow());
+            const user = await ig.user.searchExact(username);
+            const userId = user.pk;
+            await addUser(userId, username);
+            const sessionId = ig.state.uuid;
+            await createCookies(username, sessionId);
+            await createSession(userId, sessionId, ig);
+        }
+        const res = await fetchSavedFeed(username);
+        if(res.message === "Success" && res.items){
+            const itemsWithOCR = await ocr(res.items);
+            console.log(itemsWithOCR[0]);
+            await addPost(username, itemsWithOCR);
+        }
+        return { message: "Success", username: username};
         // const res = await fetchInitialFeed(username);
         // if(res.success && res.initialFeed){
         //     return JSON.stringify({ success: true, username: username, initialFeed: res.initialFeed });
         // }
         // return JSON.stringify({ message: res.message });
     } catch (error) {
-        return { message: error.message };
+        return { message: error.message};
         // return JSON.stringify({ message: error.message });
     }
 }

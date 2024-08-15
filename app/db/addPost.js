@@ -4,10 +4,25 @@ import User from '@/db/models/User'
 
 const addPost = async (username, posts) => {
     try {
+
         const user = await User.findOne({ username: username });
+        console.log(user);
         if (!user) {
             throw new Error('User not found');
         }
+        // Post.deleteMany(
+        //     {
+        //         user: user._id
+        //     }).then(
+        //         function () {
+        //             // Success
+        //             console.log("Data deleted");
+        //         }).catch(
+        //             function (error) {
+        //                 // Failure
+        //                 console.log(error);
+        //             });
+
         const operations = posts.map(post => ({
             updateOne: {
                 filter: { postPk: post.pk }, // filter by postPk
@@ -19,6 +34,7 @@ const addPost = async (username, posts) => {
                             profileUrl: post.owner?.profile_pic_url,
                         },
                         location: post.location || null,
+                        url: `https://www.instagram.com/p/${post.code}/`,
                         caption: post.caption?.text || null,
                         images: post.carousel_media?.map(item => item.image_versions2?.candidates?.[0].url) || post.image_versions2?.candidates?.[0].url || null,
                         videos: post.video_versions?.[0]?.url || null,
