@@ -1,83 +1,64 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ChatStream from '@/components/ChatStream';
 import ChatInput from '@/components/ChatInput';
-// import Post from '@/db/models/Post';
+import Map from '@/components/Map';
+import {fetchSourcePosts} from '@/actions';
 
 export default function Chat(props) {
-  const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const isStreamingRef = useRef(false); // Add a ref to track streaming status
-  const fetchText = async (query) => {
-    const response = await fetch('/api/python', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username:props["username"], question: query }),
-    });
-    // const reader = response.body.getReader();
-    // const decoder = new TextDecoder('utf-8');
-    // let done = false;
-    // let text = '';
+  const [messages, setMessages] = useState([]);
+  const [chatHistory, setChatHistory] = useState([]);
+  const fullTextRef = useRef("");
+  const isStreamingRef = useRef(false);
 
-    // while (!done) {
-    //   const { value, done: readerDone } = await reader.read();
-    //   done = readerDone;
-    //   text += decoder.decode(value, { stream: true });
-    //   console.log(text)
-    //   setMessages((prevMessages) => {
-    //     const newMessages = [...prevMessages];
-    //     newMessages[newMessages.length - 1].text = text; // Update the last message (AI response)
-    //     return newMessages;
-    //   });
-    // }
-    // const text = await response.text();
-    // console.log(text);
-    const response_json = await response.json();
-    console.log(response_json);
-    const llm_response = response_json["response"];
-    const llm_sources = response_json["sources"];
-    console.log(llm_sources);
-    const place_info = JSON.parse(llm_response)["places"];
-    let text = "";
-    for (let i = 0; i < place_info.length; i++){
-      text += `${i+1}. ` + place_info[i]["name"] + `(${place_info[i]["address"]}): ` + `${place_info[i]["summary"]}. \n`;
-      // if (i !== place_info.length - 1){
-      //   text += "\n"; 
-      // }
-    }
-    
-    // const objectIds = sources.map(id => mongoose.Types.ObjectId(id));
-    try{    
-      // const urls = await Post.find(
-      //   { _id: { $in: objectIds } },
-      //   { url: 1} );
-      text += "\n Sources: \n";
-      const urls = ["https://www.instagram.com/p/C5yNPPlp_xN/"]
-      for(let i=0; i<urls.length;i++){
-        if (urls && urls[i]) {
-          const url = urls[i];
-          const hyperlink = `<a href="${url}" target="_blank" className="underline hover:text-blue-800">[Post ${i+1}]</a>`;
-          text += `${hyperlink}`;
-          if(i !== urls.length -1){
-            text+="\n";
+  const streamResponse = async (query, history) => {
+    try {
+      const response = await fetch('/api/python', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username:props["username"], question: query, chat_history: history}),
+      }); 
+      let done = false;
+      let text = '';
+      let sources = [];
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          done = readerDone;
+          const stream_text = decoder.decode(value, { stream: true });
+          const regex = /Sources: ([\s\S]*?)\s*-+/;
+          const match = stream_text.match(regex);
+          if(match){
+            console.log(match[1]);
+            sources = JSON.parse(match[1]); //parse document id string into a list
+            continue;
           }
-        }
+          text += stream_text;
+          fullTextRef.current = text; // Update the full text as it streams
+          setMessages((prevMessages) => {
+            const newMessages = [...prevMessages];
+            newMessages[newMessages.length - 1].text = fullTextRef.current;
+            return newMessages;
+          });
       }
-    } catch(error){
-      console.log("mongo db error: ", error)
+      //add sources after streaming is done
+      const fetchedSources = await fetchSourcePosts(sources);
+      setMessages((prevMessages) => {
+        const newMessages = [...prevMessages];
+        if (fetchedSources) {
+          newMessages[newMessages.length - 1].sources = fetchedSources;
+        }
+        return newMessages;
+      });
+      setIsStreaming(false);
+      setChatHistory((prevChatHistory) => [...prevChatHistory, {role: "assistant", content: text }]);
+    } catch (error) {
+      console.error('Streaming error:', error);
     }
-    
-    setMessages((prevMessages) => {
-      const newMessages = [...prevMessages];
-      newMessages[newMessages.length - 1].text = text; // Update the last message (AI response)
-      return newMessages;
-    });
-    // setSources((prevSources) => {
-    //   const newSources = [...prevSources];
-    //   newSources[newSources.length - 1]= "https://www.instagram.com/p/C5yNPPlp_xN/"; // Update the last message (AI response)
-    //   return newSources;
-    // });
   };
 
   const handleSend = useCallback((userInput) => {
@@ -87,13 +68,8 @@ export default function Chat(props) {
       { text: 'Loading...', isUser: false },
     ]);
     setIsStreaming(true);
-    fetchText(userInput);
-  }, []);
-  
-
-  useEffect(() => {
-    console.log(messages);
-  }, [messages]);
+    streamResponse(userInput, chatHistory);
+  }, [chatHistory]);
 
   const handleStop = useCallback(() => {
     setIsStreaming(false);
@@ -120,52 +96,49 @@ export default function Chat(props) {
     });
   }, []);
 
-  useEffect(() => {
-    console.log(isStreaming);
-  }, [isStreaming]);
-  useEffect(() => {
-    console.log(sources);
-  }, [sources]);
-
-
   return (
-    <div className="flex flex-col h-screen p-4">
-      <h1 className="mb-4 text-2xl font-bold">Aventurier</h1>
-      <div className="flex-grow">
-        <div className="flex flex-col border border-gray-300 p-4 rounded-lg h-full overflow-y-auto">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`my-2 p-2 rounded-lg max-w-[80%] whitespace-pre-wrap ${
-              message.isUser
-                ? 'bg-blue-500 text-white self-end'
-                : 'bg-gray-100 text-black self-start'
-            }`}
-          >
-            {message.isUser ? (
-              message.text
-            ) : (
-              index === messages.length - 1 && message.text !== "Loading..."? ( // Check if this is the last message
-                <ChatStream 
-                  fullText={message.text} 
-                  isStreaming={isStreaming} 
-                  onStreamingComplete={handleStreamingComplete} 
-                  onStreamingStop={handleStreamingStop} 
-                />
-              ) : (
-                message.text
-              )
-            )}
+    <div className="flex h-screen p-4">
+      <div className="flex flex-col flex-grow">
+        <h1 className="mb-4 text-2xl font-bold">Aventurier</h1>
+        <div className="flex-grow overflow-hidden">
+          {/* <div className="sticky top-0">{sourcePosts.length > 0 && <Map />}</div> */}
+          <div className="flex flex-col border border-gray-300 p-4 mt-2 rounded-lg h-full overflow-y-auto">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`my-2 p-2 rounded-lg max-w-[80%] whitespace-pre-wrap ${
+                  message.isUser
+                    ? 'bg-blue-500 text-white self-end'
+                    : 'bg-gray-100 text-black self-start'
+                }`}
+              >
+                {!message.isUser && message.sources && <Map/>}
+                <p>{message.text}</p>
+                {!message.isUser && message.sources && (
+                  <div className="mt-2">
+                    <p>Click below to view related IG posts:</p>
+                    <div className="flex space-x-2">
+                      {message.sources.map((post, postIndex) => (
+                        <div key={postIndex}>
+                          <a href={post.url} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={`https://lingering-king-7401.haikim20.workers.dev/${post.images[0]}`}
+                              style={{ width: '150px', height: '150px' }}
+                              alt="source post"
+                            />
+                          </a>
+                        </div>))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
-        {/* {sources.map((source, index)=> (
-          <div className={'my-2 p-2 rounded-lg max-w-[80%] whitespace-pre-wrap bg-gray-100 text-black self-start'}>
-            <a href="https://www.instagram.com/p/C5yNPPlp_xN/" target="_blank">Post {index}</a>
-          </div>
-        ))} */}
+        </div>
+        <div className="sticky bottom-0 bg-white">
+          <ChatInput onSend={handleSend} onStop={handleStop} isStreaming={isStreaming} />
         </div>
       </div>
-      <ChatInput onSend={handleSend} onStop={handleStop} isStreaming={isStreaming}/>
     </div>
   );
 }
