@@ -17,7 +17,6 @@ const Map = React.memo(() => { //props
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
         libraries: libs
     })
-    var service = new google.maps.places.PlacesService(document.createElement('div'));
     const initMap = useCallback(() => {
         if (!isLoaded) {
             console.log("Map not loaded");
@@ -34,12 +33,16 @@ const Map = React.memo(() => { //props
     }, [isLoaded, mapRef]);
     
     useEffect(() => {
-        initMap();
-    }, [initMap]); 
+        if(isLoaded){
+            initMap();
+            setInfoWindow(new google.maps.InfoWindow());
+        }
+    }, [isLoaded, initMap]); 
 
-    useEffect(() => {
-        setInfoWindow(new google.maps.InfoWindow());
-    }, []);
+    // useEffect(() => {
+    //     console.log("set info window");
+    //     setInfoWindow(new google.maps.InfoWindow());
+    // }, []);
 
     function searchPlace(name, service, locationBias=null){
         const request = {
@@ -80,8 +83,8 @@ const Map = React.memo(() => { //props
         await Promise.all(promises);
     
         // Flatten the results and set markers
-        results.forEach(place => {
-            setMarker(place);
+        results.forEach((place, index) => {
+            setMarker(place, index);
         });
         if(map){
             map.setCenter(results[0].geometry.location);
@@ -117,6 +120,7 @@ const Map = React.memo(() => { //props
         setIsExpanded(true); // Update state to indicate an InfoWindow is expanded
 
         if (infoWindow) {
+            console.log("handle marker click")
             // Set the content of the InfoWindow
             const tooltipContent = createTooltipContent(place);
             infoWindow.setContent(tooltipContent);
@@ -128,26 +132,33 @@ const Map = React.memo(() => { //props
         }
     };
 
-    const setMarker = useCallback((place) => {
+    const setMarker = useCallback((place, index) => {
         if (!map || !place || !place.geometry || !place.geometry.location) {
             console.log("Map or place geometry is not defined");
             return;
         }
+        const pin = new google.maps.marker.PinElement({
+            glyph: `${index+1}`,
+            glyphColor: "white",
+          });
         const marker = new google.maps.marker.AdvancedMarkerElement({
             position: place.geometry.location,
             map: map,
             gmpClickable: true,
+            content: pin.element,
         });
         marker.addListener('click', () => handleMarkerClick(place, marker));
     }, [map]);
     
-    // Usage example
     useEffect(() => {
-        const names = ['아이소 양지점', '대흥갈비']; // Replace with actual place names
-        searchPlaces(names, service).then((places) => {
-            console.log("All places searched and markers set:", places);
-        });
-    }, [service]);
+        if (isLoaded && map) {
+            const service = new google.maps.places.PlacesService(map);
+            const names = ['아이소 양지점', '대흥갈비']; // Replace with actual place names
+            searchPlaces(names, service).then((places) => {
+                console.log("All places searched and markers set:", places);
+            });
+        }
+    }, [isLoaded, map]);
 
     useEffect(() => {
         function handleResize() {
