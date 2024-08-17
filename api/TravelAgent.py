@@ -1,6 +1,5 @@
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.prompts import ChatPromptTemplate
 from langchain_upstage import UpstageEmbeddings, ChatUpstage
-from langchain_core.output_parsers import StrOutputParser
 from typing import TypedDict, Literal, List
 from pymongo.mongo_client import MongoClient
 from langchain_mongodb import MongoDBAtlasVectorSearch
@@ -10,15 +9,18 @@ from langchain.chains import create_history_aware_retriever
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'util')))
-from db import load_documents
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '/api/lib')))
 from pymongo.errors import BulkWriteError
 import time
 import json
+import logging
 from api.lib.template import ItineraryTemplate, MappingTemplate
+from api.lib.load_documents import load_documents
+from bson import ObjectId
+
 
 load_dotenv()
-# os.environ["UPSTAGE_API_KEY"] = os.getenv("UPSTAGE_API_KEY")
+os.environ["UPSTAGE_API_KEY"] = os.getenv("UPSTAGE_API_KEY")
 os.environ["MONGODB_ATLAS_CLUSTER_URI"] = os.getenv("NEXT_PUBLIC_MONGO_URI")
 client = MongoClient(os.environ["MONGODB_ATLAS_CLUSTER_URI"]) 
 DB_NAME = "langchain_db"
@@ -37,16 +39,19 @@ class TravelAgent:
             index_name=ATLAS_VECTOR_SEARCH_INDEX_NAME,
             relevance_score_fn="cosine"
         )
-        # start_time = time.time()
-        # document_ids, documents = load_documents(username)
-        # try:
-        #     self.vectorstore.add_documents(documents=documents, ids=document_ids)
-        # except BulkWriteError as e:
-        #     pass
-        # print("Time taken for adding documents: ", time.time() - start_time)
+        start_time = time.time()
+        documents, document_ids = load_documents(username)
+        matching_count = collection.count_documents({"_id": {"$in": document_ids}})
+        if matching_count != len(document_ids):
+            try:
+                self.vectorstore.add_documents(documents=documents, ids=document_ids)
+            except BulkWriteError as e:
+                pass
+                logging.error(e.details)
+        print("Time taken for adding documents to the vector store: ", time.time() - start_time)
 
         self.retriever = self.vectorstore.as_retriever(
-            search_kwargs={'k': 3}
+            search_kwargs={'k': 5}
         )
 
         # contextualize_q_system_prompt = """Given a chat history and the latest user question \
@@ -156,7 +161,8 @@ class TravelAgent:
         # Invoke the chain with the query and return the result
         response = chain.invoke({"input": query, "chat_history": chat_history})
         for doc in response["context"]:
-            sources.append(doc.metadata["_id"])
+            if doc.metadata["post_id"] not in sources:
+                sources.append(doc.metadata["post_id"])
         return {"answer": response["answer"], "sources": sources}
         # sources = ""
         # for doc in response["context"]:
