@@ -10,7 +10,7 @@ export default function Chat(props) {
   const [chatHistory, setChatHistory] = useState([]);
   const fullTextRef = useRef("");
   const isStreamingRef = useRef(false);
-
+  const [waypoints, setWaypoints] = useState(null);
   const streamResponse = async (query, history) => {
     try {
       const response = await fetch('/api/python', {
@@ -20,42 +20,53 @@ export default function Chat(props) {
           },
           body: JSON.stringify({ username:props["username"], question: query, chat_history: history}),
       }); 
-      let done = false;
+      const response_json = await response.json();
+      const sources = response_json["sources"];
+      const answer = response_json["answer"]; 
+      let wp;
       let text = '';
-      let sources = [];
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-
-      while (!done) {
-          const { value, done: readerDone } = await reader.read();
-          done = readerDone;
-          const stream_text = decoder.decode(value, { stream: true });
-          const regex = /Sources: ([\s\S]*?)\s*-+/;
-          const match = stream_text.match(regex);
-          if(match){
-            console.log(match[1]);
-            sources = JSON.parse(match[1]); //parse document id string into a list
-            continue;
-          }
-          text += stream_text;
-          fullTextRef.current = text; // Update the full text as it streams
-          setMessages((prevMessages) => {
-            const newMessages = [...prevMessages];
-            newMessages[newMessages.length - 1].text = fullTextRef.current;
-            return newMessages;
+      try {
+        const answer_json = JSON.parse(answer);
+        wp = answer_json["waypoints"];
+        if ("places" in answer_json) {
+          const places = answer_json["places"];
+          places.forEach((place, index) => {
+              text += `${index + 1}. ${place["name"]}: ${place["description"]}.`;
+              if (index !== places.length - 1) {
+                  text += "\n";
+              }
           });
+        } else if ("days" in answer_json) {
+            const days = answer_json["days"];
+            days.forEach(day => {
+                text += `Day ${day["day"]}:\n`;
+                day["activities"].forEach(activity => {
+                    text += `- ${activity["time"]}: ${activity["activity"]}\n`;
+                });
+                text += "\n";
+            });
+            text += answer_json["hashtags"].join(" ");
+        } else {
+            text += answer;
+        }
+      } catch (e) {
+          // If parsing fails, assume answer is a plain string
+          text += answer;
       }
-      //add sources after streaming is done
-      const fetchedSources = await fetchSourcePosts(sources);
+      let fetchedSources;
+      if(sources && sources.length > 0){
+        fetchedSources = await fetchSourcePosts(sources);
+      }
       setMessages((prevMessages) => {
         const newMessages = [...prevMessages];
+        newMessages[newMessages.length - 1].text = text;
         if (fetchedSources) {
           newMessages[newMessages.length - 1].sources = fetchedSources;
         }
         return newMessages;
       });
-      setIsStreaming(false);
-      setChatHistory((prevChatHistory) => [...prevChatHistory, {role: "assistant", content: text }]);
+      setWaypoints(wp);
+      setChatHistory((prevChatHistory) => [...prevChatHistory, {role: "assistant", content: answer }]);
     } catch (error) {
       console.error('Streaming error:', error);
     }
@@ -85,7 +96,7 @@ export default function Chat(props) {
   }, []);
 
   const handleStreamingStop = useCallback((currentIndex) => {
-    console.log("Streaming stopped at index:", currentIndex);
+    // console.log("Streaming stopped at index:", currentIndex);
     setMessages((prevMessages) => {
       const newMessages = [...prevMessages];
       // Check if the last message is not complete and is not from the user
@@ -95,6 +106,12 @@ export default function Chat(props) {
       return newMessages;
     });
   }, []);
+  // useEffect(() => {
+  //   console.log("Messages: ", messages);
+  // }, [messages]);
+  // useEffect(() => {
+  //   console.log("is streaming: ", isStreaming);
+  // }, [isStreaming]);
 
   return (
     <div className="flex h-screen p-4">
@@ -112,10 +129,24 @@ export default function Chat(props) {
                     : 'bg-gray-100 text-black self-start'
                 }`}
               >
-                {!message.isUser && message.sources && <Map/>}
-                <p>{message.text}</p>
+                {!message.isUser && message.sources && waypoints && <Map waypoints={waypoints}/>}
+                {message.isUser ? (
+                  message.text
+                ) : (
+                  index === messages.length - 1 && message.text !== "Loading..."? ( // Check if this is the last message
+                    <ChatStream 
+                      fullText={message.text} 
+                      isStreaming={isStreaming} 
+                      onStreamingComplete={handleStreamingComplete} 
+                      onStreamingStop={handleStreamingStop} 
+                    />
+                  ) : (
+                    message.text
+                  )
+                )}
                 {!message.isUser && message.sources && (
                   <div className="mt-2">
+                    <br></br>
                     <p>Click below to view related IG posts:</p>
                     <div className="flex space-x-2">
                       {message.sources.map((post, postIndex) => (
@@ -133,6 +164,7 @@ export default function Chat(props) {
                 )}
               </div>
             ))}
+            
           </div>
         </div>
         <div className="sticky bottom-0 bg-white">

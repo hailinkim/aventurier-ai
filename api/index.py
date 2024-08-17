@@ -120,7 +120,6 @@ collection = db[COLLECTION_NAME]
     # print(ai_msg_2["answer"])
 
 app = Flask(__name__)
-# app.secret_key('83c1bf42d299c0925fd31b2ae7db0cecd534dbe473820ee17aa85e0db32843ba')
 @app.route('/api/python', methods=['POST'])
 def stream():
     data = request.json   
@@ -131,6 +130,8 @@ def stream():
     print("history: ", chat_history)
     agent = TravelAgent(username)
     response = agent.invoke(query, chat_history) 
-    return app.response_class(response, mimetype='text')
+    print("index.py response: ", response)
+    return response
+    # return app.response_class(response, mimetype='text')
 
     # return Response(chat(), content_type='text/event-stream')

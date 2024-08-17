@@ -29,20 +29,18 @@ class Itinerary(BaseModel):
     waypoints: List[str] = Field(description="List of place names in the order that appear in the itinerary")
 
 class Place(BaseModel):
-    place_name: str = Field(description="Name of the place found from the context or chat history")
+    name: str = Field(description="Name of the place found from the context or chat history")
     description: str = Field(description="Description of the place related to user's request", default="")
 
 class Places(BaseModel):
     places: List[Place] = Field(description="List of places requested by user")
-    waypoints: List[str] = Field(description="List of place names that appear in the itinerary")
+    waypoints: List[str] = Field(description="List of place names in the order that appear in the response")
 
-def generate_few_shot():
-    examples = []
+def generate_few_shot(file):
     __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-    for line in open(os.path.join(__location__, 'few_shot_mapping.jsonl'), "r"):
+    for line in open(os.path.join(__location__, file), "r"):
         json_obj = json.loads(line)
-        examples.append(json_obj)
-    return examples
+    return json_obj
 
 class MappingTemplate(object):
     def __init__(self):        
@@ -51,33 +49,38 @@ class MappingTemplate(object):
             """
         self.human_template = """ Following is the context: {context}
         ----------------
-        Below shows how you should format your output. For example:            
-            1. Eiffel Tower: 
-            - A wrought-iron lattice tower on the Champ de Mars in Paris, France. It is one of the most recognizable structures in the world.
-            2. Louvre Museum:
-            - The world's largest art museum and a historic monument in Paris, France.
-            waypoints: [Eiffel Tower, Louvre Museum]
+        Below shows how you should format your output. 
+        
+        {format_instructions}
+        
+        For example:
+        {few_shot_examples}
 
-        Question: {input}. Extract place information from the provided context only to answer the question. Never use your prior knowledge.
+        Question: {input}. Extract place information only from the provided context to answer the question. Never use your prior knowledge.
         """
 
-        # self.parser = JsonOutputParser(pydantic_object=Places)
-        self.parser = PydanticOutputParser(pydantic_object=Places)
+        self.parser = JsonOutputParser(pydantic_object=Places)
+        # self.parser = PydanticOutputParser(pydantic_object=Places)
 
-        self.system_message_prompt = SystemMessagePromptTemplate.from_template(
-            self.system_template,
-            partial_variables={
-                "format_instructions": self.parser.get_format_instructions(),
-                # "few_shot_examples": generate_few_shot()
-            },
-        )
+        # self.system_message_prompt = SystemMessagePromptTemplate.from_template(
+        #     self.system_template,
+        #     partial_variables={
+        #         "format_instructions": self.parser.get_format_instructions(),
+        #         # "few_shot_examples": generate_few_shot()
+        #     },
+        # )
         
         self.human_message_prompt = HumanMessagePromptTemplate.from_template(
-            self.human_template, input_variables=["input"]
+            self.human_template, 
+            input_variables=["input"],
+            partial_variables={
+                "format_instructions": self.parser.get_format_instructions(),
+                "few_shot_examples": generate_few_shot('few_shot_mapping.jsonl')
+            },
         )
         self.chat_prompt = ChatPromptTemplate.from_messages(
             [
-                self.system_message_prompt, 
+                # self.system_message_prompt, 
                 self.human_message_prompt
             ]
         )       
@@ -89,9 +92,9 @@ class ItineraryTemplate(object):
             which can be understood without the chat history. Do NOT answer the question, \
             just reformulate it if needed and otherwise return it as is."""
         
-        self.system_template = """
-            {format_instructions}
-            """
+        # self.system_template = """
+        #     {format_instructions}
+        #     """
         self.human_template = """Following is the context: {context}
             ----------------
             You are a travel planning assistant. \
@@ -100,25 +103,13 @@ class ItineraryTemplate(object):
             If no relevant context is provided, clearly state that you do not have enough information.\
             
             Below shows how you should format your output. 
-            Example 1: 
-                Day 1:
-                - Morning: Start your day with a visit to the Eiffel Tower. Arrive early to avoid the crowds and take the elevator to the top for stunning views of Paris.
-                - Lunch: Enjoy a leisurely lunch at Le Jules Verne, a Michelin-starred restaurant located within the Eiffel Tower.
-                - Afternoon: Head over to the Louvre Museum. Spend the afternoon exploring its vast collection of art, including the famous Mona Lisa.
-                - Evening: Take a sunset Seine River cruise. Enjoy the illuminated landmarks of Paris as you glide along the river.
-                
-                Day 2:
-                Morning: Begin your day with a stroll through the Jardin des Tuileries. This beautiful garden is located near the Louvre.
-                Lunch: Dine at Le Meurice, a historic restaurant with a view of the Tuileries Garden.
-                Afternoon: Visit the charming neighborhood of Montmartre. Explore the Sacre-Coeur Basilica and the quaint streets filled with artists.
-                Evening: End your trip with dinner at Le Relais de l’Entrecôte, known for its delicious steak and fries."
 
-                #EiffelDreams #LouvreLovers #SeineSunsetCruise #ParisDiningDelights
+            {format_instructions}
 
-                waypoints: [Eiffel Tower, Le Jules Verne, Louvre Museum, Seine River, Tuileries Garden, Montmartre, Le Relais de l’Entrecôte]
-
-            Example 2 (context is not provided):
-                I don't have enough information to create an itinerary. Could you please provide more details or mention some places you'd like to visit?
+            For example:
+                {few_shot_examples}
+                Example 2 (context is not provided):
+                    I don't have enough information to create an itinerary. Could you please provide more details or mention some places you'd like to visit?
         
             Question: {input}. You must use some of the places mentioned in either the chat history or the provided context."""
         
@@ -130,21 +121,27 @@ class ItineraryTemplate(object):
             ]
         )
 
-        self.parser = PydanticOutputParser(pydantic_object=Itinerary)
+        self.parser = JsonOutputParser(pydantic_object=Itinerary)
 
-        self.system_message_prompt = SystemMessagePromptTemplate.from_template(
-            self.system_template,
-            partial_variables={
-                "format_instructions": self.parser.get_format_instructions()
-            },
-        )
+        # self.system_message_prompt = SystemMessagePromptTemplate.from_template(
+        #     self.system_template,
+        #     partial_variables={
+        #         "format_instructions": self.parser.get_format_instructions(),
+        #         "few_shot_examples": generate_few_shot('few_shot_itinerary.jsonl')
+        #     },
+        # )
         
         self.human_message_prompt = HumanMessagePromptTemplate.from_template(
-            self.human_template, input_variables=["input"]
+            self.human_template, 
+            input_variables=["input"],
+            partial_variables={
+                "format_instructions": self.parser.get_format_instructions(),
+                "few_shot_examples": generate_few_shot('few_shot_itinerary.jsonl')
+            },
         )
         self.chat_prompt = ChatPromptTemplate.from_messages(
             [
-                self.system_message_prompt, 
+                # self.system_message_prompt, 
                 MessagesPlaceholder("chat_history"),
                 self.human_message_prompt
             ]
