@@ -17,13 +17,14 @@ const nextConfig = {
           source: '/api/:path*',
           destination:
             process.env.NODE_ENV === 'development'
-              ? 'http://0.0.0.0:5328/api/:path*'
+              ? 'http://127.0.0.1:5328/api/:path*'
               : '/api/',
         },
       ]
     },
     experimental: {
         instrumentationHook: true,
+        proxyTimeout: 1000 * 120,
     },
   }
 
