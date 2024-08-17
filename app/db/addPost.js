@@ -6,7 +6,6 @@ const addPost = async (username, posts) => {
     try {
 
         const user = await User.findOne({ username: username });
-        console.log(user);
         if (!user) {
             throw new Error('User not found');
         }

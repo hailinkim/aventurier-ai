@@ -23,6 +23,10 @@ const postSchema = new mongoose.Schema({
     location:{
         type:Object,
     },
+    url:{
+        type:String,
+        required: true,
+    },
     caption:{
         type: String,
     },
@@ -38,4 +42,4 @@ const postSchema = new mongoose.Schema({
     },
 }, { strict: false })
 
-export default mongoose.models.Post || mongoose.model('Post', postSchema)
+export default mongoose.models.Post || mongoose.model('Post', postSchema);
