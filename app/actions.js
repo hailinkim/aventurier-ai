@@ -7,6 +7,7 @@ import Post from '@/db/models/Post';
 import initializeRedis from '@/lib/redis-client';
 import { cookies } from 'next/headers';
 import { ocr } from './lib/ocr';
+import mongoose from 'mongoose';
 // import { createSession, getSession, createCookies} from '@/lib/sessionHandler.js';
 
 const ig = new IgApiClient();
@@ -140,25 +141,25 @@ export async function login(prevState, formData) {
     try {
         const username = formData.get('username');
         const password = formData.get('password');
-        const sessionRestored = await getSession(username);
-        if (!sessionRestored) {
-            ig.state.generateDevice(username);
-            await ig.simulate.preLoginFlow();
-            await ig.account.login(username, password);
-            process.nextTick(async () => await ig.simulate.postLoginFlow());
-            const user = await ig.user.searchExact(username);
-            const userId = user.pk;
-            await addUser(userId, username);
-            const sessionId = ig.state.uuid;
-            await createCookies(username, sessionId);
-            await createSession(userId, sessionId, ig);
-        }
-        const res = await fetchSavedFeed(username);
-        if(res.message === "Success" && res.items){
-            const itemsWithOCR = await ocr(res.items);
-            console.log(itemsWithOCR[0]);
-            await addPost(username, itemsWithOCR);
-        }
+        // const sessionRestored = await getSession(username);
+        // if (!sessionRestored) {
+        //     ig.state.generateDevice(username);
+        //     await ig.simulate.preLoginFlow();
+        //     await ig.account.login(username, password);
+        //     process.nextTick(async () => await ig.simulate.postLoginFlow());
+        //     const user = await ig.user.searchExact(username);
+        //     const userId = user.pk;
+        //     await addUser(userId, username);
+        //     const sessionId = ig.state.uuid;
+        //     await createCookies(username, sessionId);
+        //     await createSession(userId, sessionId, ig);
+        // }
+        // const res = await fetchSavedFeed(username);
+        // if(res.message === "Success" && res.items){
+        //     const itemsWithOCR = await ocr(res.items);
+        //     console.log(itemsWithOCR[0]);
+        //     await addPost(username, itemsWithOCR);
+        // }
         return { message: "Success", username: username};
         // const res = await fetchInitialFeed(username);
         // if(res.success && res.initialFeed){
@@ -168,5 +169,13 @@ export async function login(prevState, formData) {
     } catch (error) {
         return { message: error.message};
         // return JSON.stringify({ message: error.message });
+    }
+}
+
+export async function fetchSourcePosts(postIds) {
+    if(postIds){
+        const objectIds = postIds.map(id => new mongoose.Types.ObjectId(id));
+        const posts = Post.find({ _id: { $in: objectIds }}, { url: 1, images: 1, _id: 0 } );
+        return posts;
     }
 }
