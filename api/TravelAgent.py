@@ -138,23 +138,28 @@ class TravelAgent:
         # Determine destination: animal or vegetable
         destination = self.route_chain.invoke({"input": query})
         if destination not in ["searchPlaces", "itinerary"]:
-            print(destination)
-            yield destination
-            return
+            # print(destination)
+            # yield destination
+            return {"answer": destination, "sources": []}
         #GC 
 
         # Choose the appropriate chain based on the destination
         chain = self.chain_1 if destination == "searchPlaces" else self.chain_2
 
         sources = []
-        for chunk in chain.stream({"input": query, "chat_history": chat_history}):
-            if answer_chunk := chunk.get("answer"):
-                yield str(answer_chunk)
-            if context_chunk := chunk.get("context"):
-                print("".join([doc.page_content for doc in context_chunk]))
-                yield "Sources: " + str(json.dumps([doc.metadata["_id"] for doc in context_chunk])) + "\n------"
+        # for chunk in chain.stream({"input": query, "chat_history": chat_history}):
+        #     if answer_chunk := chunk.get("answer"):
+        #         yield str(answer_chunk)
+        #     if context_chunk := chunk.get("context"):
+        #         print("".join([doc.page_content for doc in context_chunk]))
+        #         yield "Sources: " + str(json.dumps([doc.metadata["_id"] for doc in context_chunk])) + "\n------"
         # Invoke the chain with the query and return the result
-        # response = chain.invoke({"input": query, "chat_history": chat_history})
+        response = chain.invoke({"input": query, "chat_history": chat_history})
+        for doc in response["context"]:
+            sources.append(doc.metadata["_id"])
+        tmp = {"answer": response["answer"], "sources": sources}
+        print(tmp)
+        return tmp
         # sources = ""
         # for doc in response["context"]:
         #     sources += f"[{doc.metadata['_id']}] "

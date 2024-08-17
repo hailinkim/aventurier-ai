@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client';
 import PlaceCard from './PlaceCard';
 
 const libs = ["core", "maps", 'places', "marker"]
-const Map = React.memo(() => { //props
+const Map = React.memo((props) => { 
     const [map, setMap] = useState(null);
     // const [locationBias, setLocationBias] = useState(null);  // State to store the location
     const [isExpanded, setIsExpanded] = useState(false);
@@ -35,7 +35,11 @@ const Map = React.memo(() => { //props
     useEffect(() => {
         if(isLoaded){
             initMap();
-            setInfoWindow(new google.maps.InfoWindow());
+            setInfoWindow(new google.maps.InfoWindow(
+                {
+                    maxWidth: 250,
+                }
+            ));
         }
     }, [isLoaded, initMap]); 
 
@@ -120,7 +124,6 @@ const Map = React.memo(() => { //props
         setIsExpanded(true); // Update state to indicate an InfoWindow is expanded
 
         if (infoWindow) {
-            console.log("handle marker click")
             // Set the content of the InfoWindow
             const tooltipContent = createTooltipContent(place);
             infoWindow.setContent(tooltipContent);
@@ -153,10 +156,11 @@ const Map = React.memo(() => { //props
     useEffect(() => {
         if (isLoaded && map) {
             const service = new google.maps.places.PlacesService(map);
-            const names = ['아이소 양지점', '대흥갈비']; // Replace with actual place names
-            searchPlaces(names, service).then((places) => {
-                console.log("All places searched and markers set:", places);
-            });
+            if(props.waypoints.length > 0){
+                searchPlaces(props.waypoints, service).then((places) => {
+                    console.log("All places searched and markers set:", places);
+                });
+            }
         }
     }, [isLoaded, map]);
 
@@ -169,7 +173,11 @@ const Map = React.memo(() => { //props
                     setStyle({height: "50vh", width: "100%"});
                 }
             } else {
-                setStyle({height: "45vh", width: "100%"});
+                if(isExpanded){
+                    setStyle({height: "60vh", width: "100%"});
+                } else{
+                    setStyle({height: "45vh", width: "100%"});
+                }
             }
         }
 

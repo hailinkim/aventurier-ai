@@ -31,12 +31,7 @@ const ChatStream = ({ fullText, speed = 20, isStreaming, onStreamingComplete, on
     }
   }, [isStreaming, onStreamingStop]);
 
-  // return <div>{displayedText}</div>;
-  return (
-    <div
-      dangerouslySetInnerHTML={{ __html: displayedText }}
-    />
-  )
+  return <div>{displayedText}</div>;
 };
 
 export default ChatStream;

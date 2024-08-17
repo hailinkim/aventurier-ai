@@ -12,14 +12,14 @@ function PlaceCard({ name, address, rating, imageUrl }) {
   };
 
   return (
-    <article className="flex flex-col grow w-30 max-w-sm h-auto p-4 bg-white rounded-lg shadow-lg overflow-y-auto">
+    <article className="flex flex-col grow h-auto bg-white rounded-lg shadow-lg overflow-y-auto">
       <div className="relative flex flex-col rounded-xl bg-zinc-400 h-full group">
         {imageUrl && imageUrl.length > 0 && (
             <img
               loading="lazy"
               src={imageUrl[currentImageIndex]}
               alt={`${name} location`}
-              className="object-cover w-15 h-15 rounded-xl"
+              className="object-fit rounded-xl"
             />
         )}
         <button
