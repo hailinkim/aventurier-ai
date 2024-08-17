@@ -157,9 +157,7 @@ class TravelAgent:
         response = chain.invoke({"input": query, "chat_history": chat_history})
         for doc in response["context"]:
             sources.append(doc.metadata["_id"])
-        tmp = {"answer": response["answer"], "sources": sources}
-        print(tmp)
-        return tmp
+        return {"answer": response["answer"], "sources": sources}
         # sources = ""
         # for doc in response["context"]:
         #     sources += f"[{doc.metadata['_id']}] "
