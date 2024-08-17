@@ -131,7 +131,7 @@ def stream():
     agent = TravelAgent(username)
     response = agent.invoke(query, chat_history) 
     print("index.py response: ", response)
-    return response
+    return json.dumps(response)
     # return app.response_class(response, mimetype='text')
 
     # return Response(chat(), content_type='text/event-stream')
