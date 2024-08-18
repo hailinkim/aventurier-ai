@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+
 const ChatStream = ({ fullText, speed = 20, isStreaming, onStreamingComplete, onStreamingStop }) => {
   const [displayedText, setDisplayedText] = useState('');
   const intervalRef = useRef(null);
