@@ -34,10 +34,14 @@ def search(username, query):
         relevance_score_fn="cosine"
     )
     documents, document_ids = load_documents(username)
-    matching_count = collection.count_documents({"_id": {"$in": document_ids}})
-    if matching_count != len(document_ids):
+    existing_documents = collection.find({"_id": {"$in": document_ids}})
+    existing_ids = {doc["_id"] for doc in existing_documents}
+    # matching_count = collection.count_documents({"_id": {"$in": document_ids}})
+    if len(existing_ids) != len(document_ids):
         try:
-            vectorstore.add_documents(documents=documents, ids=document_ids)
+            filtered_ids = [doc_id for doc_id in document_ids if doc_id not in existing_ids]
+            filtered_documents = [doc for doc, doc_id in zip(documents, document_ids) if doc_id not in existing_ids]
+            vectorstore.add_documents(documents=filtered_documents, ids=filtered_ids)
         except BulkWriteError as e:
             pass
             logging.error(e.details)
