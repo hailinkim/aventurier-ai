@@ -6,20 +6,17 @@ import ImageGrid from '@/components/ImageGrid';
 import { useInView } from 'react-intersection-observer';
 import { useRouter } from 'next/navigation';
 import { search, fetchInitialFeed } from '@/actions';
-// import {useJsApiLoader} from '@react-google-maps/api'
-// import { Sema } from 'async-sema';
-// import { set } from 'mongoose';
-// import { all } from 'axios';
-// import {gpt} from '@/lib/gpt';
-import { Ysabeau_SC } from "next/font/google";
+
+import { Ysabeau_SC, Quicksand } from "next/font/google";
 const ysabeauSC = Ysabeau_SC({
     weight: ['500'], // Specify the weights you need
     subsets: ['latin'], // Specify the subsets you need
 });
+const quicksand = Quicksand({
+    weight: ['400'], // Specify the weights you need
+    subsets: ['latin'], // Specify the subsets you need
+});
 
-
-// const libs = ["core", "maps", 'places', "marker"]
-const PAGE_SIZE = 21;
 const GRID_SIZE = 21;
 const Search = React.memo(({ params }) => {
   const router = useRouter();
@@ -30,7 +27,6 @@ const Search = React.memo(({ params }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchMode, setSearchMode] = useState('search');
   const isMobile = useMediaQuery({ query: '(max-width: 767px)' });
-  const [showMenuPopup, setShowMenuPopup] = useState(false);
   const [offset, setOffset] = useState(0);
   const [allPosts, setAllPosts] = useState([]);
   const [loadMore, setLoadMore] = useState(false);
@@ -56,11 +52,9 @@ const Search = React.memo(({ params }) => {
   };
 
   const handleSearchMode = (mode) => {
-    console.log("mode: ", mode);
     setSearchMode(mode);
     setQuery(null);
     if(mode === 'chat'){
-        console.log("hello");
         router.push(`/${username}/chat/`);
     }
   };
@@ -73,12 +67,12 @@ const Search = React.memo(({ params }) => {
     setQuery(query);
     const posts = await search(username, query);
     setAllPosts(posts);
+    setIsSearching(false);
   };
     
   const loadPosts = async () => {
     let posts;
     posts = allPosts.slice(offset, offset + GRID_SIZE);
-    setIsSearching(false);
     setFilteredPosts(filteredPosts? [...filteredPosts, ...posts] : posts);
     setOffset(offset + GRID_SIZE);
   }
@@ -110,9 +104,9 @@ const Search = React.memo(({ params }) => {
       <div className={`flex flex-col grow self-center md:mt-6 md:w-[60%] max-md:max-w-full`}>
       <div className="flex gap-1 self-start text-lg leading-6 text-black max-md:text-sm max-md:ml-2 max-md:mt-2">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 w-6 max-md:w-4 aspect-square" >
-            <path d="M3.9 21.0785V1.9H20.1V21.0785L12.5762 14.8086C12.2424 14.5305 11.7576 14.5305 11.4238 14.8086L3.9 21.0785Z" stroke="#222222" strokeWidth="1" strokeLinejoin="round"/>
+          <path d="M3.9 21.0785V1.9H20.1V21.0785L12.5762 14.8086C12.2424 14.5305 11.7576 14.5305 11.4238 14.8086L3.9 21.0785Z" stroke="#222222" strokeWidth="1" strokeLinejoin="round"/>
         </svg>
-        <h2 className="my-auto">Your Saved Posts</h2>
+        <h2 className={`${quicksand.className} my-auto`}>Your Saved Posts</h2>
         </div>
         <div>
           {filteredPosts?.length > 0 ? (
