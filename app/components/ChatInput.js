@@ -25,22 +25,37 @@ const ChatInput = React.memo(({ onSend, onStop, isStreaming }) => {
     }
   }, [handleSend]);
 
+  const handleButtonClick = useCallback(() => {
+    if (isStreaming) {
+      onStop();
+    } else {
+      handleSend();
+    }
+  }, [isStreaming, handleSend, onStop]);
+
   return (
     <div className="chat-input mt-4 flex">
-      <input
-        type="text"
-        value={inputValue}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        placeholder="Type your message here..."
-        className="p-2 flex-grow border border-gray-300 rounded mr-2"
-      />
-      <button onClick={handleSend} disabled={isStreaming} className="p-2 bg-blue-500 text-white rounded mr-2">
-        Send
-      </button>
-      <button onClick={onStop} disabled={!isStreaming} className="p-2 bg-red-500 text-white rounded">
-        Stop
-      </button>
+      <div className="relative flex-grow">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Type your message here..."
+          className="p-2 w-full border border-gray-300 rounded pr-10"
+        />
+        <button
+          onClick={handleButtonClick}
+          disabled={isStreaming && !inputValue.trim()}
+          className="absolute inset-y-0 right-0 flex items-center pr-2"
+        >
+          {isStreaming ? (
+            <span className="text-red text-xl">&#9632;</span> // Square symbol
+          ) : (
+            <span className="text-blue-500 text-xl">&#8593;</span> // Upward arrow symbol
+          )}
+        </button>
+      </div>
     </div>
   );
 });

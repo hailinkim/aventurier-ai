@@ -13,7 +13,8 @@ const tailwindConfig = {
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
       colors: {
-        'navy':'#0f172a'
+        'navy':'#0f172a',
+        'red':'#991b1b'
       }
     },
   },
