@@ -1,6 +1,4 @@
 import { useState, useRef } from 'react';
-import CloseButton from './CloseButton';
-import Magnifier from './Magnifier';
 import '@/globals.css'
 
 function SearchBar({ onSearch, onModeChange}) {
@@ -34,9 +32,9 @@ function SearchBar({ onSearch, onModeChange}) {
           onClick={() => handleToggle('search')}
           className={`btn btn-toggle-default ${searchMode === 'search' ? 'btn-toggle py-1.5' : ''}`}
         >
-          <svg class = {searchMode === 'search' ? 'stroke-stone-700' : 'stroke-stone-400'} width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="10" cy="10" r="8.1"  stroke-width="1.8"/>
-            <path d="M22 22L16 16" stroke-width="1.8" stroke-linecap="round"/>
+          <svg className = {searchMode === 'search' ? 'stroke-stone-700' : 'stroke-stone-400'} width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="10" cy="10" r="8.1"  strokeWidth="1.8"/>
+            <path d="M22 22L16 16" strokeWidth="1.8" strokeLinecap="round"/>
           </svg>
 
         </button>
