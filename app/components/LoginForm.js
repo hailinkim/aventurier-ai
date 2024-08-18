@@ -17,6 +17,7 @@ const ysabeauSC = Ysabeau_SC({
 });
 
 export default function LoginForm(){
+    const router = useRouter();
     const [state, formAction] = useFormState(login, initialState);
     let [isPending, startTransition] = useTransition();
 
@@ -26,7 +27,6 @@ export default function LoginForm(){
     }, [isPending]);
 
     if(state.message === 'Success'){
-        const router = useRouter();
         router.push(`${state.username}/search/`);
     }
 
