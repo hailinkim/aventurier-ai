@@ -33,7 +33,6 @@ export default function LoginForm(){
         const router = useRouter();
         router.push(`${state.username}/search/`);
         // return <Chat username={state.username} />;
-        // return <Search username={state.username} initialFeed={state.initialFeed} />;
     }
 
     const onSubmit = async (formData) => {
@@ -83,7 +82,8 @@ export default function LoginForm(){
                                     {isPending ? 'Logging in and fetching your data...' : 'Login'}
                                 </button>
                             </div>
-                            <p style={{ color: 'red' }}>{state.message}</p>
+                            {state.message !== 'Success' && <p style={{ color: 'red' }}>{state.message}</p>
+                            }
                         </div>
                     </section>
                 </main>
