@@ -24,15 +24,17 @@ class Itinerary(BaseModel):
     # trip_title: str = Field(description="Title of the trip or itinerary")
     # start_date: str = Field(description="Start date of the trip in YYYY-MM-DD format")
     # end_date: str = Field(description="End date of the trip in YYYY-MM-DD format")
+    region: str = Field(description="Region or city of the trip requested by the user")
     days: List[Day] = Field(description="List of days in the itinerary")
     hashtags: List[str] = Field(description="List of catchy hashtags describing the trip")
     waypoints: List[str] = Field(description="List of place names in the order that appear in the itinerary")
 
 class Place(BaseModel):
     name: str = Field(description="Name of the place found from the context or chat history")
-    description: str = Field(description="Description of the place related to user's request", default="")
+    description: str = Field(description="Summary of the place description related to user's request", default="")
 
 class Places(BaseModel):
+    region: str = Field(description="Region or city of the places requested by the user")
     places: List[Place] = Field(description="List of places requested by user")
     waypoints: List[str] = Field(description="List of place names in the order that appear in the response")
 
@@ -52,11 +54,12 @@ class MappingTemplate(object):
         Below shows how you should format your output. 
         
         {format_instructions}
-        
-        For example:
-        {few_shot_examples}
 
-        Question: {input}. Extract place information only from the provided context to answer the question. Never use your prior knowledge.
+        Question: {input}. \
+            Extract place information from the given context to answer the question.\
+            Never use any prior knowledge.\
+            Only include places mentioned in the context that are within the region specified by the user and relevant to the user's request.
+            Translate your response into English.
         """
 
         self.parser = JsonOutputParser(pydantic_object=Places)
@@ -75,7 +78,7 @@ class MappingTemplate(object):
             input_variables=["input"],
             partial_variables={
                 "format_instructions": self.parser.get_format_instructions(),
-                "few_shot_examples": generate_few_shot('few_shot_mapping.jsonl')
+                # "few_shot_examples": generate_few_shot('few_shot_mapping.jsonl')
             },
         )
         self.chat_prompt = ChatPromptTemplate.from_messages(
@@ -105,13 +108,9 @@ class ItineraryTemplate(object):
             Below shows how you should format your output. 
 
             {format_instructions}
-
-            For example:
-                {few_shot_examples}
-                Example 2 (context is not provided):
-                    I don't have enough information to create an itinerary. Could you please provide more details or mention some places you'd like to visit?
         
-            Question: {input}. You must use some of the places mentioned in either the chat history or the provided context."""
+            Question: {input}. You must use some of the places mentioned in either the chat history or the provided context.\
+                Translate your response into English."""
         
         self.contextualize_q_prompt = ChatPromptTemplate.from_messages(
             [
@@ -136,7 +135,7 @@ class ItineraryTemplate(object):
             input_variables=["input"],
             partial_variables={
                 "format_instructions": self.parser.get_format_instructions(),
-                "few_shot_examples": generate_few_shot('few_shot_itinerary.jsonl')
+                # "few_shot_examples": generate_few_shot('few_shot_itinerary.jsonl')
             },
         )
         self.chat_prompt = ChatPromptTemplate.from_messages(
