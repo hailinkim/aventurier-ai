@@ -1,12 +1,9 @@
-// Popup.js
-import React, { useState } from 'react';
+import React from 'react';
 import CloseButton from './CloseButton';
 import ArrowButton from './ArrowButton';
 
-const WORKER_URL = 'https://lingering-king-7401.haikim20.workers.dev/';
-
 const ImagePopup = ({ posts, selectedImageIndex, currentPopupImageIndex, closePopup, showPreviousPost, showNextPost, showPreviousPopupImage, showNextPopupImage }) => {
-    const proxiedSrc = `${WORKER_URL}${posts[selectedImageIndex].images[currentPopupImageIndex]}`;
+    const proxiedSrc = `${process.env.WORKER_URL}${posts[selectedImageIndex].images[currentPopupImageIndex]}`;
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
         <div className="absolute top-2.5 right-2">
