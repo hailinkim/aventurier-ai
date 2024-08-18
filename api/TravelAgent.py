@@ -16,8 +16,8 @@ import json
 import logging
 from api.lib.template import ItineraryTemplate, MappingTemplate
 from api.lib.load_documents import load_documents
-from bson import ObjectId
-
+from langchain_upstage import UpstageGroundednessCheck
+import ast 
 
 load_dotenv()
 os.environ["UPSTAGE_API_KEY"] = os.getenv("UPSTAGE_API_KEY")
@@ -51,6 +51,8 @@ class TravelAgent:
         print("Time taken for adding documents to the vector store: ", time.time() - start_time)
 
         self.retriever = self.vectorstore.as_retriever(
+            # search_type="similarity_score_threshold",
+            # search_kwargs={'score_threshold': 0.3}
             search_kwargs={'k': 5}
         )
 
@@ -148,22 +150,58 @@ class TravelAgent:
             return {"answer": destination, "sources": []}
         #GC 
 
+        gc = UpstageGroundednessCheck()
+        groundedness_check_count = 0
+
         # Choose the appropriate chain based on the destination
         chain = self.chain_1 if destination == "searchPlaces" else self.chain_2
 
-        sources = []
-        # for chunk in chain.stream({"input": query, "chat_history": chat_history}):
-        #     if answer_chunk := chunk.get("answer"):
-        #         yield str(answer_chunk)
-        #     if context_chunk := chunk.get("context"):
-        #         print("".join([doc.page_content for doc in context_chunk]))
-        #         yield "Sources: " + str(json.dumps([doc.metadata["_id"] for doc in context_chunk])) + "\n------"
-        # Invoke the chain with the query and return the result
-        response = chain.invoke({"input": query, "chat_history": chat_history})
-        for doc in response["context"]:
-            if doc.metadata["post_id"] not in sources:
-                sources.append(doc.metadata["post_id"])
-        return {"answer": response["answer"], "sources": sources}
+        while(groundedness_check_count < 2):
+            sources = []
+            # for chunk in chain.stream({"input": query, "chat_history": chat_history}):
+            #     if answer_chunk := chunk.get("answer"):
+            #         yield str(answer_chunk)
+            #     if context_chunk := chunk.get("context"):
+            #         print("".join([doc.page_content for doc in context_chunk]))
+            #         yield "Sources: " + str(json.dumps([doc.metadata["_id"] for doc in context_chunk])) + "\n------"
+            # Invoke the chain with the query and return the result
+            response = chain.invoke({"input": query, "chat_history": chat_history})
+            answer = response["answer"]
+            print("Raw answer: ", answer)
+            if isinstance(answer, str):
+                answer = answer.replace("```json", "").replace("```", "").strip()
+            # Parse the answer
+            try:
+                # Safely evaluate the cleaned string as a dictionary
+                answer_json = json.loads(json.dumps(ast.literal_eval(answer)))
+            except (ValueError, SyntaxError) as e:
+                print("Error parsing answer:", e)
+                groundedness_check_count += 1
+                continue
+            print("agent: ", answer_json)
+
+            # Check groundedness
+            context = "\n\n".join([doc.page_content for doc in response["context"]])
+            groundedness_context = "User query: {query} \n\n Context: {context}".format(query=query, context=context)
+            print("groundedness context: ", groundedness_context)
+            groundedness_check = gc.run({"context": groundedness_context, "answer": f"The region mentioned in the user query is {answer_json['region']}. Place names in {answer_json['waypoints']} are mentioned in the context and are located in {answer_json['region']}"})
+            print("groundedness check: ", groundedness_check)
+            # if region_check=="notGrounded":
+            #     groundedness_check_count += 1
+            #     continue
+            # waypoint_check = gc.run({"context": context, "answer": f"Place names in {answer_json['waypoints']} are mentioned in the context and are located in {answer_json['region']}"})
+            # print("waypoint_check: ", waypoint_check)
+            if groundedness_check=="grounded":
+                for doc in response["context"]:
+                    if doc.metadata["post_id"] not in sources:
+                        sources.append(doc.metadata["post_id"])
+                return {"answer": answer, "sources": sources}
+            groundedness_check_count += 1
+        return {"answer": "We couldn't find the information you requested. If you have another question or need help with something else, feel free to ask!", "sources": []}
+
+
+                
+        
         # sources = ""
         # for doc in response["context"]:
         #     sources += f"[{doc.metadata['_id']}] "
