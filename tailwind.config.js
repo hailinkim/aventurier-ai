@@ -14,7 +14,7 @@ const tailwindConfig = {
       },
       colors: {
         'navy':'#0f172a',
-        'red':'#991b1b'
+        'red':'#991b1b',
       }
     },
   },

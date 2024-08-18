@@ -37,6 +37,7 @@ from langchain_openai import ChatOpenAI
 from flask import Flask, request, Response, stream_with_context, jsonify, session
 import asyncio
 from api.TravelAgent import TravelAgent
+from api.Search import search
 load_dotenv()
 # os.environ["UPSTAGE_API_KEY"] = os.getenv("UPSTAGE_API_KEY")
 os.environ["MONGODB_ATLAS_CLUSTER_URI"] = os.getenv("NEXT_PUBLIC_MONGO_URI")
@@ -126,12 +127,16 @@ def stream():
     # print("data: ", data)
     query = data.get('question', '')
     username = data.get('username', '')
-    chat_history = data.get('chat_history', [])
-    print("history: ", chat_history)
-    agent = TravelAgent(username)
-    response = agent.invoke(query, chat_history[:4]) 
-    print("index.py response: ", response)
-    return json.dumps(response)
+    mode = data.get('mode', '')
+    if mode == "chat":
+        chat_history = data.get('chat_history', [])
+        print("history: ", chat_history)
+        agent = TravelAgent(username)
+        response = agent.invoke(query, chat_history[:4]) 
+        print("index.py response: ", response)
+        return json.dumps(response)
+    search_result = search(username, query)
+    return json.dumps(search_result)
     # return app.response_class(response, mimetype='text')
 
     # return Response(chat(), content_type='text/event-stream')

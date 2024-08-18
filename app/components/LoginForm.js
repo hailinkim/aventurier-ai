@@ -1,13 +1,13 @@
 'use client';
 import {useFormState} from 'react-dom';
 import { useTransition, useEffect } from 'react'
-// import Login from './Login';
-// import Search from '@/ui/Search';
 import '@/globals.css';
 import { set } from 'mongoose';
 import {login} from '@/actions';
 import Chat from '@/components/Chat';
 import { Ysabeau_SC } from "next/font/google";
+import Search from '@/components/Search';
+import { useRouter } from 'next/navigation'
 
 const initialState = {
     message: '',
@@ -30,7 +30,10 @@ export default function LoginForm(){
     }, [isPending]);
 
     if(state.message === 'Success'){
-        return <Chat username={state.username} />;
+        const router = useRouter();
+        router.push(`${state.username}/search/`);
+        // return <Chat username={state.username} />;
+        // return <Search username={state.username} initialFeed={state.initialFeed} />;
     }
 
     const onSubmit = async (formData) => {
