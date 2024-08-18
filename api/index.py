@@ -129,7 +129,7 @@ def stream():
     chat_history = data.get('chat_history', [])
     print("history: ", chat_history)
     agent = TravelAgent(username)
-    response = agent.invoke(query, chat_history) 
+    response = agent.invoke(query, chat_history[:4]) 
     print("index.py response: ", response)
     return json.dumps(response)
     # return app.response_class(response, mimetype='text')
