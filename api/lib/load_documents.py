@@ -5,8 +5,8 @@ from langchain_core.documents import Document
 import re
 from typing import Dict
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import time
 import hashlib
+# import time
 
 load_dotenv() 
 os.environ["UPSTAGE_API_KEY"] = os.getenv("UPSTAGE_API_KEY")
