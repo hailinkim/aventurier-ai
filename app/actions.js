@@ -126,7 +126,6 @@ export async function login(prevState, formData) {
         const res = await fetchSavedFeed(username);
         if(res.message === "Success" && res.items){
             const itemsWithOCR = await ocr(res.items);
-            console.log(itemsWithOCR[0]);
             await addPost(username, itemsWithOCR);
         }
         return { message: "Success", username: username};
