@@ -9,8 +9,6 @@ import { cookies } from 'next/headers';
 import { ocr } from './lib/ocr';
 import mongoose from 'mongoose';
 
-// import { createSession, getSession, createCookies} from '@/lib/sessionHandler.js';
-
 const ig = new IgApiClient();
 
 export const createSession = async (userId, sessionId) => {
@@ -53,7 +51,7 @@ export const createCookies = async(username, sessionId) => {
     cookies().set(username, sessionId, {
         httpOnly: true, // Recommended for security purposes
         secure: true,
-        sameSite: 'lax', // Can be strict or lax depending on your requirements
+        sameSite: 'lax',
         path: '/', // The cookie will be available on all pages
         maxAge: 60 * 60 * 24 * 7 // Cookie expiry set to one week
     })
@@ -73,35 +71,6 @@ async function fetchSavedFeed(username) {
 
         const existingPosts = await Post.find({ user: user._id }).select('postPk lastFetchDate');
         const existingPostMap = new Map(existingPosts.map(post => [post.postPk, post.lastFetchDate]));
-        
-        // console.time('Synchronous Filtering');
-        // do {
-        //     const {items, more_available} = await savedFeed.request();
-        //     const newItems = items.filter(item => {
-        //         const postPk = Number(item.media.pk);
-        //         const lastFetchDate = existingPostMap.get(postPk);
-
-        //         if (existingPostMap.has(postPk)) {
-        //             const sevenDaysAgo = new Date();
-        //             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
-        //             if (lastFetchDate && new Date(lastFetchDate) > sevenDaysAgo) {
-        //                 return false; // Skip this item
-        //             }
-        //         }
-        
-        //         return true;
-        //     });
-        
-        //     // if (newItems.length < items.length) { 
-        //     //     stopFetching = true;
-        //     // }
-        
-        //     allItems = [...allItems, ...newItems.map(item => item.media)];
-        //     moreAvailable = more_available;
-        //     // moreAvailable = more_available && !stopFetching;
-        // } while (moreAvailable);
-        // console.timeEnd('Synchronous Filtering');
 
         console.time('async Filtering');
         do {
@@ -137,40 +106,32 @@ async function fetchSavedFeed(username) {
     }
 }
 
-// const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export async function login(prevState, formData) {
     try {
         const username = formData.get('username');
         const password = formData.get('password');
-        // const sessionRestored = await getSession(username);
-        // if (!sessionRestored) {
-        //     ig.state.generateDevice(username);
-        //     await ig.simulate.preLoginFlow();
-        //     await ig.account.login(username, password);
-        //     process.nextTick(async () => await ig.simulate.postLoginFlow());
-        //     const user = await ig.user.searchExact(username);
-        //     const userId = user.pk;
-        //     await addUser(userId, username);
-        //     const sessionId = ig.state.uuid;
-        //     await createCookies(username, sessionId);
-        //     await createSession(userId, sessionId, ig);
-        // }
-        // const res = await fetchSavedFeed(username);
-        // if(res.message === "Success" && res.items){
-        //     const itemsWithOCR = await ocr(res.items);
-        //     console.log(itemsWithOCR[0]);
-        //     await addPost(username, itemsWithOCR);
-        // }
+        const sessionRestored = await getSession(username);
+        if (!sessionRestored) {
+            ig.state.generateDevice(username);
+            await ig.simulate.preLoginFlow();
+            await ig.account.login(username, password);
+            process.nextTick(async () => await ig.simulate.postLoginFlow());
+            const user = await ig.user.searchExact(username);
+            const userId = user.pk;
+            await addUser(userId, username);
+            const sessionId = ig.state.uuid;
+            await createCookies(username, sessionId);
+            await createSession(userId, sessionId, ig);
+        }
+        const res = await fetchSavedFeed(username);
+        if(res.message === "Success" && res.items){
+            const itemsWithOCR = await ocr(res.items);
+            console.log(itemsWithOCR[0]);
+            await addPost(username, itemsWithOCR);
+        }
         return { message: "Success", username: username};
-        // const res = await fetchInitialFeed(username);
-        // if(res.success && res.initialFeed){
-        //     return JSON.stringify({ success: true, username: username, initialFeed: res.initialFeed });
-        // }
-        // return JSON.stringify({ message: res.message });
-
     } catch (error) {
         return { message: error.message};
-        // return JSON.stringify({ message: error.message });
     }
 }
 
