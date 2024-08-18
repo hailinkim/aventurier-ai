@@ -50,9 +50,23 @@ const ChatInput = React.memo(({ onSend, onStop, isStreaming }) => {
           className="absolute inset-y-0 right-0 flex items-center pr-2"
         >
           {isStreaming ? (
-            <span className="text-red text-xl">&#9632;</span> // Square symbol
+            <div className="flex items-center justify-center w-6 h-6 bg-red-500 rounded-full">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="white"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect x="4" y="4" width="16" height="16" />
+              </svg>
+            </div>
           ) : (
-            <span className="text-blue-500 text-xl">&#8593;</span> // Upward arrow symbol
+            <div className="flex items-center justify-center w-6 h-6 bg-blue-500 rounded-full">
+              <svg width="12" height="12" viewBox="0 0 14 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 1V15M7 1L13 7M7 1L1 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           )}
         </button>
       </div>
