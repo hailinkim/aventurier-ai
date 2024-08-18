@@ -1,5 +1,4 @@
 from langchain_upstage import UpstageEmbeddings, ChatUpstage
-from typing import TypedDict, Literal, List
 from pymongo.mongo_client import MongoClient
 from langchain_mongodb import MongoDBAtlasVectorSearch
 import os 
@@ -7,14 +6,9 @@ from dotenv import load_dotenv
 from pymongo.errors import BulkWriteError
 import logging
 from api.lib.load_documents import load_documents
-from langchain.retrievers.document_compressors import LLMChainExtractor
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainFilter
-from langchain.retrievers.document_compressors import EmbeddingsFilter
-from langchain.retrievers.document_compressors import DocumentCompressorPipeline
-from langchain_community.document_transformers import EmbeddingsRedundantFilter
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-import json
+
 load_dotenv()
 os.environ["UPSTAGE_API_KEY"] = os.getenv("UPSTAGE_API_KEY")
 os.environ["MONGODB_ATLAS_CLUSTER_URI"] = os.getenv("NEXT_PUBLIC_MONGO_URI")

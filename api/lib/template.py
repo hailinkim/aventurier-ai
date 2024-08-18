@@ -4,7 +4,6 @@ from langchain.prompts.chat import (
     HumanMessagePromptTemplate,
     MessagesPlaceholder
 )
-from langchain.output_parsers import PydanticOutputParser
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 from typing import List, Literal
@@ -17,14 +16,10 @@ class Activity(BaseModel):
 
 class Day(BaseModel):
     day: int = Field(description="Day number of the trip")
-    # date: str = Field(description="Date for this particular day in YYYY-MM-DD format")
     activities: List[Activity] = Field(description="List of activities for the day")
 
 class Itinerary(BaseModel):
-    # trip_title: str = Field(description="Title of the trip or itinerary")
-    # start_date: str = Field(description="Start date of the trip in YYYY-MM-DD format")
-    # end_date: str = Field(description="End date of the trip in YYYY-MM-DD format")
-    region: str = Field(description="Region or city of the trip requested by the user")
+    region: str = Field(description="Region or city of the trip requested by the user", default="")
     days: List[Day] = Field(description="List of days in the itinerary")
     hashtags: List[str] = Field(description="List of catchy hashtags describing the trip")
     waypoints: List[str] = Field(description="List of place names in the order that appear in the itinerary")
@@ -34,7 +29,7 @@ class Place(BaseModel):
     description: str = Field(description="Summary of the place description related to user's request", default="")
 
 class Places(BaseModel):
-    region: str = Field(description="Region or city of the places requested by the user")
+    region: str = Field(description="Region or city of the places requested by the user", default="")
     places: List[Place] = Field(description="List of places requested by user")
     waypoints: List[str] = Field(description="List of place names in the order that appear in the response")
 
@@ -58,7 +53,7 @@ class MappingTemplate(object):
         Question: {input}. \
             Extract place information from the given context to answer the question.\
             Never use any prior knowledge.\
-            Only include places mentioned in the context that are within the region specified by the user and relevant to the user's request.
+            If the context does not contain any relevant information, clearly state that you do not have enough information.\
             Translate your response into English.
         """
 
