@@ -156,7 +156,7 @@ export async function fetchSourcePosts(postIds) {
 }
 
 export async function search(username, query){
-    const response = await fetch('http://localhost:3000/api/python', {
+    const response = await fetch('/api/python', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
