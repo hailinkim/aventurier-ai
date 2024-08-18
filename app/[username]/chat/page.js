@@ -7,6 +7,7 @@ import {fetchSourcePosts} from '@/actions';
 import { Ysabeau_SC } from "next/font/google";
 import { useRouter } from 'next/navigation';
 import '@/globals.css'
+import { set } from 'mongoose';
 const ysabeauSC = Ysabeau_SC({
   weight: ['500'], // Specify the weights you need
   subsets: ['latin'], // Specify the subsets you need
@@ -16,10 +17,11 @@ export default function Chat({ params }) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [messages, setMessages] = useState([]);
   const [chatHistory, setChatHistory] = useState([]);
-  const fullTextRef = useRef("");
   const isStreamingRef = useRef(false);
   const [waypoints, setWaypoints] = useState(null);
+  const [locationBias, setLocationBias] = useState(null);
   const [searchMode, setSearchMode] = useState('chat');
+
   const router = useRouter();
   const handleToggle = (mode) => {
     setSearchMode(mode);
@@ -42,9 +44,11 @@ export default function Chat({ params }) {
       const answer = response_json["answer"]; 
       let wp;
       let text = '';
+      let region = '';
       try {
         const answer_json = JSON.parse(answer);
         wp = answer_json["waypoints"];
+        region = answer_json["region"];
         if ("places" in answer_json) {
           const places = answer_json["places"];
           places.forEach((place, index) => {
@@ -84,6 +88,7 @@ export default function Chat({ params }) {
         return newMessages;
       });
       setWaypoints(wp);
+      setLocationBias(region);
       setChatHistory((prevChatHistory) => [...prevChatHistory, {role: "assistant", content: answer }]);
     } catch (error) {
       console.error('Streaming error:', error);
@@ -94,11 +99,29 @@ export default function Chat({ params }) {
     setMessages((prevMessages) => [
       ...prevMessages,
       { text: userInput, isUser: true },
-      { text: "Hang tight! We're double-checking our response to ensure it's accurate and reliable...", isUser: false },
+      { text: "Loading...", isUser: false },
     ]);
     setIsStreaming(true);
     streamResponse(userInput, chatHistory);
   }, [chatHistory]);
+
+  useEffect(() => {
+    // Use setTimeout to update the message after 2000 milliseconds (2 seconds)
+    if(isStreaming){
+        const timeoutId = setTimeout(() => {
+            setMessages((prevMessages) => {
+                const newMessages = [...prevMessages];
+                // Check if the last message is not complete and is not from the user
+                if (newMessages.length > 0 && !newMessages[newMessages.length - 1].isUser && (newMessages[newMessages.length - 1].text === "Loading...")) {
+                  newMessages[newMessages.length - 1].text = "Hang tight! We're double-checking our response to ensure it's accurate and reliable."; // Update the last message
+                }
+                return newMessages;
+            });
+        }, 5000);
+          // Cleanup function to clear the timeout if the component unmounts
+          return () => clearTimeout(timeoutId);
+    }
+  }, [messages, isStreaming]); 
 
   const handleStop = useCallback(() => {
     setIsStreaming(false);
@@ -124,12 +147,6 @@ export default function Chat({ params }) {
       return newMessages;
     });
   }, []);
-  // useEffect(() => {
-  //   console.log("Messages: ", messages);
-  // }, [messages]);
-  // useEffect(() => {
-  //   console.log("is streaming: ", isStreaming);
-  // }, [isStreaming]);
 
   return (
     <div className="flex h-screen p-4">
@@ -142,9 +159,9 @@ export default function Chat({ params }) {
                     onClick={() => handleToggle('search')}
                     className={`btn btn-toggle-default ${searchMode === 'search' ? 'btn-toggle py-1.5' : ''}`}
                     >
-                    <svg class = {searchMode === 'search' ? 'stroke-stone-700' : 'stroke-stone-400'} width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="10" cy="10" r="8.1"  stroke-width="1.8"/>
-                        <path d="M22 22L16 16" stroke-width="1.8" stroke-linecap="round"/>
+                    <svg className = {searchMode === 'search' ? 'stroke-stone-700' : 'stroke-stone-400'} width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="10" cy="10" r="8.1"  strokeWidth="1.8"/>
+                        <path d="M22 22L16 16" strokeWidth="1.8" strokeLinecap="round"/>
                     </svg>
 
                     </button>
@@ -170,20 +187,20 @@ export default function Chat({ params }) {
                             : 'bg-gray-100 text-black self-start'
                         }`}
                     >
-                        {!message.isUser && message.sources && waypoints && <Map waypoints={waypoints}/>}
+                        {!message.isUser && message.sources && waypoints && <Map locationBias={locationBias} waypoints={waypoints}/>}
                         {message.isUser ? (
-                        message.text
-                        ) : (
-                        index === messages.length - 1 && message.text !== "Hang tight! We're double-checking our response to ensure it's accurate and reliable..."? ( // Check if this is the last message
-                            <ChatStream 
-                            fullText={message.text} 
-                            isStreaming={isStreaming} 
-                            onStreamingComplete={handleStreamingComplete} 
-                            onStreamingStop={handleStreamingStop} 
-                            />
-                        ) : (
                             message.text
-                        )
+                        ) : (
+                            index === messages.length - 1 && !(message.text === "Loading..." || message.text === "Hang tight! We're double-checking our response to ensure it's accurate and reliable.")? ( // Check if this is the last message
+                                <ChatStream 
+                                    fullText={message.text} 
+                                    isStreaming={isStreaming} 
+                                    onStreamingComplete={handleStreamingComplete} 
+                                    onStreamingStop={handleStreamingStop} 
+                                />
+                            ) : (
+                                message.text
+                            )
                         )}
                         {!message.isUser && message.sources && (
                         <div className="mt-2">

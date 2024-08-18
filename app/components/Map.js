@@ -51,13 +51,15 @@ const Map = React.memo((props) => {
     function searchPlace(name, service, locationBias=null){
         const request = {
             query: name,
-            fields: ['name','geometry', 'formatted_address', 'photos', 'rating'],
+            fields: ['name','geometry'],
             // language: 'ko',
         };
     
         if (locationBias) {
             request.fields.push(...['formatted_address', 'photos', 'rating']);
-            request.locationBias = locationBias;
+            if(locationBias.lat && locationBias.lng){
+                request.locationBias = locationBias;
+            }
         }
         return new Promise((resolve, reject) => {
             service.findPlaceFromQuery(request, (results, status) => {
@@ -69,13 +71,18 @@ const Map = React.memo((props) => {
             });
         });
     }
-    const searchPlaces = async (names, service) => {
+    const searchPlaces = async (names, service, locationBias=null) => {
+        let center = '';
+        if(locationBias){
+            const result = await searchPlace(locationBias, service);
+            center = result[0].geometry.location;
+        }
         const results = [];
         const sema = new Sema(names.length);
         const promises = names.map(async name => {
             await sema.acquire(); // Acquire a semaphore token
             try {
-                const result = await searchPlace(name, service);
+                const result = await searchPlace(name, service, center);
                 results.push(result[0]); // Push all results into the results array
             } catch (error) {
                 console.error(`Error searching for ${name}:`, error);
@@ -91,7 +98,11 @@ const Map = React.memo((props) => {
             setMarker(place, index);
         });
         if(map){
-            map.setCenter(results[0].geometry.location);
+            if(center.lat && center.lng){
+                map.setCenter(center);
+            } else{
+                map.setCenter(results[0].geometry.location);
+            }
         }
     
         return results;
@@ -157,9 +168,7 @@ const Map = React.memo((props) => {
         if (isLoaded && map) {
             const service = new google.maps.places.PlacesService(map);
             if(props.waypoints.length > 0){
-                searchPlaces(props.waypoints, service).then((places) => {
-                    console.log("All places searched and markers set:", places);
-                });
+                searchPlaces(props.waypoints, service, props.locationBias);
             }
         }
     }, [isLoaded, map]);
