@@ -3,6 +3,12 @@ import ChatStream from '@/components/ChatStream';
 import ChatInput from '@/components/ChatInput';
 import Map from '@/components/Map';
 import {fetchSourcePosts} from '@/actions';
+import { Ysabeau_SC } from "next/font/google";
+
+const ysabeauSC = Ysabeau_SC({
+  weight: ['500'], // Specify the weights you need
+  subsets: ['latin'], // Specify the subsets you need
+});
 
 export default function Chat(props) {
   const [isStreaming, setIsStreaming] = useState(false);
@@ -53,6 +59,7 @@ export default function Chat(props) {
           // If parsing fails, assume answer is a plain string
           text += answer;
       }
+
       let fetchedSources;
       if(sources && sources.length > 0){
         fetchedSources = await fetchSourcePosts(sources);
@@ -76,7 +83,7 @@ export default function Chat(props) {
     setMessages((prevMessages) => [
       ...prevMessages,
       { text: userInput, isUser: true },
-      { text: 'Loading...', isUser: false },
+      { text: "Hang tight! We're double-checking our response to ensure it's accurate and reliable...", isUser: false },
     ]);
     setIsStreaming(true);
     streamResponse(userInput, chatHistory);
@@ -116,7 +123,7 @@ export default function Chat(props) {
   return (
     <div className="flex h-screen p-4">
       <div className="flex flex-col flex-grow">
-        <h1 className="mb-4 text-2xl font-bold">Aventurier</h1>
+        <h1 className={`${ysabeauSC.className} mb-2 text-2xl font-bold`}>Aventurier</h1>
         <div className="flex-grow overflow-hidden">
           {/* <div className="sticky top-0">{sourcePosts.length > 0 && <Map />}</div> */}
           <div className="flex flex-col border border-gray-300 p-4 mt-2 rounded-lg h-full overflow-y-auto">
@@ -133,7 +140,7 @@ export default function Chat(props) {
                 {message.isUser ? (
                   message.text
                 ) : (
-                  index === messages.length - 1 && message.text !== "Loading..."? ( // Check if this is the last message
+                  index === messages.length - 1 && message.text !== "Hang tight! We're double-checking our response to ensure it's accurate and reliable..."? ( // Check if this is the last message
                     <ChatStream 
                       fullText={message.text} 
                       isStreaming={isStreaming} 
