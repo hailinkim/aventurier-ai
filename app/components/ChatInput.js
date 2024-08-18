@@ -46,7 +46,7 @@ const ChatInput = React.memo(({ onSend, onStop, isStreaming }) => {
         />
         <button
           onClick={handleButtonClick}
-          disabled={isStreaming && !inputValue.trim()}
+          // disabled={isStreaming && !inputValue.trim()}
           className="absolute inset-y-0 right-0 flex items-center pr-2"
         >
           {isStreaming ? (
