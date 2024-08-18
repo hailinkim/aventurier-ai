@@ -1,7 +1,7 @@
-import { Quicksand } from "next/font/google";
+import { Open_Sans } from "next/font/google";
 import "./globals.css";
 
-const inter = Quicksand({ 
+const inter = Open_Sans({ 
   weight: ['400'], 
   subsets: ["latin"] 
 });
