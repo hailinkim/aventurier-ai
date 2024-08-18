@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@langchain/mongodb':
+        specifier: ^0.0.5
+        version: 0.0.5(langchain@0.2.15(axios@1.7.3)(ignore@5.3.1)(mongodb@6.8.0)(openai@4.54.0)(redis@4.7.0))(openai@4.54.0)
       '@react-google-maps/api':
         specifier: ^2.19.3
         version: 2.19.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -29,6 +32,9 @@ importers:
       langchain:
         specifier: ^0.2.15
         version: 0.2.15(axios@1.7.3)(ignore@5.3.1)(mongodb@6.8.0)(openai@4.54.0)(redis@4.7.0)
+      mongodb:
+        specifier: ^6.8.0
+        version: 6.8.0
       mongoose:
         specifier: ^8.5.1
         version: 8.5.2
@@ -150,6 +156,10 @@ packages:
 
   '@langchain/core@0.2.23':
     resolution: {integrity: sha512-elPg6WpAkxWEIGC9u38F2anbzqfYYEy32lJdsd9dtChcHSFmFLlXqa+SnpO3R772gUuJmcu+Pd+fCvmRFy029w==}
+    engines: {node: '>=18'}
+
+  '@langchain/mongodb@0.0.5':
+    resolution: {integrity: sha512-TcbdzvPzEs1/eHCItwivvVViZj1kqrHg0rCkPbdBvLx5HdbXsOfDcDsZJP9bwVG9Wf6DWR+VFI+0lBsY55mAzQ==}
     engines: {node: '>=18'}
 
   '@langchain/openai@0.2.6':
@@ -2635,6 +2645,21 @@ snapshots:
       - langchain
       - openai
 
+  '@langchain/mongodb@0.0.5(langchain@0.2.15(axios@1.7.3)(ignore@5.3.1)(mongodb@6.8.0)(openai@4.54.0)(redis@4.7.0))(openai@4.54.0)':
+    dependencies:
+      '@langchain/core': 0.2.23(langchain@0.2.15(axios@1.7.3)(ignore@5.3.1)(mongodb@6.8.0)(openai@4.54.0)(redis@4.7.0))(openai@4.54.0)
+      mongodb: 6.8.0
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-providers'
+      - '@mongodb-js/zstd'
+      - gcp-metadata
+      - kerberos
+      - langchain
+      - mongodb-client-encryption
+      - openai
+      - snappy
+      - socks
+
   '@langchain/openai@0.2.6(langchain@0.2.15(axios@1.7.3)(ignore@5.3.1)(mongodb@6.8.0)(openai@4.54.0)(redis@4.7.0))':
     dependencies:
       '@langchain/core': 0.2.23(langchain@0.2.15(axios@1.7.3)(ignore@5.3.1)(mongodb@6.8.0)(openai@4.54.0)(redis@4.7.0))(openai@4.55.4(zod@3.23.8))
@@ -4165,7 +4190,6 @@ snapshots:
       '@mongodb-js/saslprep': 1.1.8
       bson: 6.8.0
       mongodb-connection-string-url: 3.0.1
-    optional: true
 
   mongoose@8.5.2:
     dependencies:
