@@ -30,7 +30,7 @@ function ImageCardItem({ _id, user, postOwner, location, caption, images, videos
       <div className="relative flex flex-col bg-zinc-400 h-full">
         <img
           loading="lazy"
-          src={`${process.env.WORKER_URL}${images[currentImageIndex]}`}  
+          src={`${process.env.NEXT_PUBLIC_WORKER_URL}${images[currentImageIndex]}`}  
           className="object-cover w-full h-full "
         />        
         <ArrowButton onClick={handlePrevImage} direction={"left"} show={currentImageIndex > 0 && images[currentImageIndex].length > 1}/> 
