@@ -1,5 +1,6 @@
 import initializeRedis from './redis-client.js';
 import { cookies } from 'next/headers';
+
 export const createSession = async (userId, sessionId, ig) => {
     try {
         const client = await initializeRedis();
