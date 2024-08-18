@@ -115,7 +115,7 @@ class TravelAgent:
             try:
                 answer_json = json.loads(json.dumps(ast.literal_eval(answer)))
             except (ValueError, SyntaxError) as e:
-                logging.error(e.details)
+                logging.error(e)
                 groundedness_check_count += 1
                 continue
 
