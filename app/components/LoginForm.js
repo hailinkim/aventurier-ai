@@ -4,35 +4,30 @@ import { useTransition, useEffect } from 'react'
 import '@/globals.css';
 import { set } from 'mongoose';
 import {login} from '@/actions';
-import Chat from '@/components/Chat';
 import { Ysabeau_SC } from "next/font/google";
-import Search from '@/components/Search';
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const initialState = {
     message: '',
 }
 const ysabeauSC = Ysabeau_SC({
-    weight: ['500'], // Specify the weights you need
-    subsets: ['latin'], // Specify the subsets you need
-  });
+    weight: ['500'],
+    subsets: ['latin'],
+});
 
 export default function LoginForm(){
     const [state, formAction] = useFormState(login, initialState);
     let [isPending, startTransition] = useTransition();
-    console.count('LoginForm called');
 
     useEffect(() => {
         if(isPending) return;
-    
-        // THIS CODE WILL RUN AFTER THE SERVER ACTION
         
     }, [isPending]);
 
     if(state.message === 'Success'){
         const router = useRouter();
         router.push(`${state.username}/search/`);
-        // return <Chat username={state.username} />;
     }
 
     const onSubmit = async (formData) => {
@@ -46,7 +41,10 @@ export default function LoginForm(){
             <form action={onSubmit} className="flex flex-col justify-center mt-7">
                 <main className="flex justify-center items-center px-16 h-screen text-sm text-blue-500 bg-white max-md:px-5">
                     <section className="flex flex-col flex-wrap justify-center content-center px-4 pt-20 pb-20 max-w-full bg-white border border-solid border-neutral-800 border-opacity-30 w-[375px]">
-                        <h1 className={`${ysabeauSC.className} text-4xl font-bold text-center text-navy mb-8`}>Aventurier</h1>
+                        <div className="flex items-center justify-center mb-8">
+                            <Image src="/Instagram_Logo.svg" className = "mr-2 mt-2" alt="logo" width={30} height={30} />
+                            <h1 className={`${ysabeauSC.className} text-4xl font-bold text-center text-navy`}>Aventurier</h1>
+                        </div>
                         {/* <img loading="lazy" src="https://cdn.builder.io/api/v1/image/assets/TEMP/0f9feb2ad2ef767399e5ed8fa9c083f66640cce34d6452358aff36ac391d6edd?apiKey=8cee1f60e6bf4f68b8bdc4b0ce71214d&" alt="" className="self-center mt-6 max-w-full aspect-[3.7] fill-neutral-800 w-[182px]" />    */}
                         <div>
                             <div className={`flex flex-col justify-center tracking-normal whitespace-nowrap text-black`}>
@@ -79,7 +77,7 @@ export default function LoginForm(){
                                     className={`btn btn-primary rounded-md ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     disabled={isPending} // Disable button during loading
                                 >
-                                    {isPending ? 'Logging in and fetching your data...' : 'Login'}
+                                    {isPending ? 'Logging in and fetching your data...' : 'Login to Instagram'}
                                 </button>
                             </div>
                             {state.message !== 'Success' && <p style={{ color: 'red' }}>{state.message}</p>
