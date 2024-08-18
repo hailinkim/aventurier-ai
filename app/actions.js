@@ -8,6 +8,7 @@ import initializeRedis from '@/lib/redis-client';
 import { cookies } from 'next/headers';
 import { ocr } from './lib/ocr';
 import mongoose from 'mongoose';
+
 // import { createSession, getSession, createCookies} from '@/lib/sessionHandler.js';
 
 const ig = new IgApiClient();
@@ -166,16 +167,43 @@ export async function login(prevState, formData) {
         //     return JSON.stringify({ success: true, username: username, initialFeed: res.initialFeed });
         // }
         // return JSON.stringify({ message: res.message });
+
     } catch (error) {
         return { message: error.message};
         // return JSON.stringify({ message: error.message });
     }
 }
 
+export async function fetchInitialFeed(username) {
+    try{
+        const user = await User.findOne({ username: username });
+        if (!user) {
+            return { success: false, initialFeed: null, message: 'User not found' };
+        }
+        const initialFeed = await Post.find({user: user._id}).sort({ _id: 1 }).limit(21);
+        return { success: true, initialFeed: initialFeed };
+    } catch (error) {
+        return { success: false, initialFeed: null, message: `Error: ${error.message}` };
+    }
+}
+
 export async function fetchSourcePosts(postIds) {
     if(postIds){
         const objectIds = postIds.map(id => new mongoose.Types.ObjectId(id));
-        const posts = Post.find({ _id: { $in: objectIds }}, { url: 1, images: 1, _id: 0 } );
+        const posts = Post.find({ _id: { $in: objectIds }});
         return posts;
     }
+}
+
+export async function search(username, query){
+    const response = await fetch('http://localhost:3000/api/python', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: username, question: query, mode: "search"}),
+    }); 
+    const response_json = await response.json();
+    const posts = await fetchSourcePosts(response_json["post_ids"]);
+    return posts;
 }

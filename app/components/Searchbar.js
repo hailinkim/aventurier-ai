@@ -3,7 +3,7 @@ import CloseButton from './CloseButton';
 import Magnifier from './Magnifier';
 import '@/globals.css'
 
-function SearchBar({ onSearch, onModeChange, onPlaceTypeChange}) {
+function SearchBar({ onSearch, onModeChange}) {
   const [searchMode, setSearchMode] = useState('search');
   const queryRef = useRef(null);
 
@@ -29,7 +29,7 @@ function SearchBar({ onSearch, onModeChange, onPlaceTypeChange}) {
           />
         </form>
       </div>
-      <div className="flex h-auto py-1.5 pr-0.5 pl-1.5 bg-stone-200 rounded-full ml-2">
+      <div className="flex py-1.5 pr-0.5 pl-1.5 bg-stone-200 rounded-full ml-2">
         <button
           onClick={() => handleToggle('search')}
           className={`btn btn-toggle-default ${searchMode === 'search' ? 'btn-toggle py-1.5' : ''}`}
