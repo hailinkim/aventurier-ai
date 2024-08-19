@@ -15,8 +15,8 @@ This project is a travel assistant that leverages user's saved Instagram post da
 - Backend: Next.js, Flask API
 - Deployment: Vercel
 
-The Flask server is mapped into to Next.js app under /api/.
-This is implemented using `next.config.js` rewrites to map any request to /api/:path\* to the Flask API, which is hosted in the /api folder.
+The Flask server is mapped into to Next.js app under `/api/`.
+This is implemented using `next.config.js` rewrites to map any request to `/api/:path\*` to the Flask API, which is hosted in the /api folder.
 On localhost, the rewrite will be made to the 127.0.0.1:5328 port, which is where the Flask server is running.
 In production, the Flask server is hosted as Python serverless functions on Vercel.
 
@@ -26,6 +26,7 @@ In production, the Flask server is hosted as Python serverless functions on Verc
 - [instagram-private-api](<(https://github.com/dilame/instagram-private-api)>): - A Node JS library that allows for the retrieval of Instagram posts and user data.
 - Upstage Document OCR API - Extract travel information embedded in images.
 - Solar Embeddings API - Embeds Instagram posts into a high-dimensional vector space for efficient retrieval.
+- MongoDB - Stores Instagram posts and their embeddings for semantic search and chatbot features.
 - Solar Chat API - Powers the AI chatbot with RAG
 - Upstage Groundedness Check API - Validates the alignment between AI's response and retrieved Instagram posts to cope with hallucination.
 - Google Maps API - Displays curated on-trend places on a map with detailed information such as address, rating, and photos.
@@ -48,7 +49,6 @@ In production, the Flask server is hosted as Python serverless functions on Verc
 │   ├── lib/
 │   │   └── ocr.js (Utility functions for OCR)
 |   |   └── ... (Other utility functions)
-
 │   └── ... (Next.js app files)
 │
 ├── api/ (Flask API)
@@ -79,8 +79,9 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app is also deployed on Vercel for production, and you can access it [here](https://aventurier2-ohjdc493h-angelicas-projects-5267088d.vercel.app).
 
 To demonstrate the app, you can use the sample Instagram account:
 
-- **Username:** `celine__lover`
+- **Username:** `heylinkim`
 - **Password:** `Upstage1234`
