@@ -16,7 +16,7 @@ function SearchBar({ onSearch, onModeChange}) {
   };
 
   return (
-    <div className="flex flex-col md:flex-row md:justify-between justify-center px-2 py-2 text-sm bg-white font-semibold max-md:max-w-full">
+    <div className="flex flex-row md:justify-between justify-center px-2 py-2 text-sm bg-white font-semibold max-md:max-w-full">
       <div className="flex py-3 pr-2 pl-5 my-auto bg-white border border-neutral-200 border-solid shadow-md rounded-full text-neutral-800 flex-grow">
         <form onSubmit={handleSearch} className="flex-grow">
           <input
