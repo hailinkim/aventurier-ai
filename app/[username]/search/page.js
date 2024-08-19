@@ -5,7 +5,7 @@ import Searchbar from '@/components/Searchbar';
 import ImageGrid from '@/components/ImageGrid';
 import { useInView } from 'react-intersection-observer';
 import { useRouter } from 'next/navigation';
-import { search, fetchInitialFeed } from '@/actions';
+import { fetchInitialFeed, fetchSourcePosts } from '@/actions';
 
 import { Ysabeau_SC, Quicksand } from "next/font/google";
 const ysabeauSC = Ysabeau_SC({
@@ -59,6 +59,19 @@ const Search = React.memo(({ params }) => {
     }
   };
 
+  const search = async (username, query) => {
+    const response = await fetch('/api/python', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: username, question: query, mode: "search"}),
+    }); 
+    const response_json = await response.json();
+    const posts = await fetchSourcePosts(response_json["post_ids"]);
+    return posts;
+};
+
   const handleSearch = async (query) => {
     setIsSearching(true);
     setOffset(0);  
@@ -91,7 +104,7 @@ const Search = React.memo(({ params }) => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-white">
-      <div className="flex items-center justify-between px-10 pt-6 pb-4 w-full md:border-b md:border-solid md:border-neutral-200 max-md:flex-wrap max-md:px-5 max-md:max-w-full">
+      <div className="flex items-center justify-between px-10 pt-6 md:pb-4 w-full md:border-b md:border-solid md:border-neutral-200 max-md:flex-wrap max-md:px-5 max-md:max-w-full">
         <h1 className={`flex-1 ${ysabeauSC.className} text-2xl font-bold mb-2`}>Aventurier</h1>
         <div className="flex items-center justify-center md:w-[40%] max-md:w-full">
           <div className="flex-grow">
