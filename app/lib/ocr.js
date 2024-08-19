@@ -24,14 +24,18 @@ const runOCR = async (url) => {
 };
 
 // Helper function to create a delay
-// const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const processImagesParallel = async (images, concurrency) => {
+    if(!images || images.length === 0){
+        return [];
+    }
     console.time("Parallel Processing Time");
     const sema = new Sema(concurrency);
     const rateLimit = RateLimit(RPS, { timeUnit: 1000 }); // Limit to 5 requests per second
     const results = [];
-
+    console.log(images);
+    console.log(images.length);
     const tasks = images.map(async (image) => {
         await sema.acquire();
         try {
@@ -40,7 +44,7 @@ const processImagesParallel = async (images, concurrency) => {
             if(text && text.length>0){
                 results.push(text);
             }
-            // await delay(1); 
+            await delay(100); 
         } finally {
             sema.release();
         }
@@ -76,11 +80,18 @@ export const ocr = async (feed) => {
     if(!feed || feed.length === 0){
         return [];
     }
+    const image_arr = [];
     const updatedFeed = [];
     for (const post of feed) {
-        const images = post.carousel_media?.map(item => item.image_versions2?.candidates?.[0].url) || post.image_versions2?.candidates?.[0].url || null;
+        const images = post.carousel_media?.map(item => item.image_versions2?.candidates?.[0].url) || 
+            [post.image_versions2?.candidates?.[0].url].filter(Boolean) || 
+            [];
         if(images && images.length > 0){
+            image_arr
             const ocrResults = await processImagesParallel(images, RPS);
+            if(ocrResults.length === 0){
+                continue;
+            }
             const postJSON = JSON.parse(JSON.stringify(post));
             postJSON.caption = postJSON.caption || {};
             postJSON.caption.text = postJSON.caption.text || '';
