@@ -55,7 +55,8 @@ In production, the Flask server is hosted as Python serverless functions on Verc
 │   ├── index.py (Entry point for the Flask app, initializes routes)
 │   ├── TravelAgent.py (Defines the TravelAgent class, encapsulating chatbot logic)
 │   └── Search.py (Performs semantic search using Upstage embeddings and MongoDB)
-│   └── ... (Other Flask app files)
+│   └── lib/
+│      └── template.py (Defines the prompt template for the chatbot)
 │
 ├── package.json (Dependencies for Next.js)
 ├── Pipfile (Dependencies for Flask)
