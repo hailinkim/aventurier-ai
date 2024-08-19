@@ -80,6 +80,7 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
 The app is also deployed on Vercel for production, and you can access it [here](aventurier2.vercel.app).
 
 **Note:** The app may initially show an error as it takes some time to connect to the MongoDB server. Please refresh the page if this occurs.
