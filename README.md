@@ -80,7 +80,7 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-The app is also deployed on Vercel for production, and you can access it [here](https://aventurier2-ohjdc493h-angelicas-projects-5267088d.vercel.app).
+The app is also deployed on Vercel for production, and you can access it [here](https://aventurier2-4gthid68t-angelicas-projects-5267088d.vercel.app/).
 
 To demonstrate the app, you can use the sample Instagram account:
 
