@@ -124,7 +124,7 @@ export async function login(prevState, formData) {
             await createSession(userId, sessionId, ig);
         }
         const res = await fetchSavedFeed(username);
-        if(res.message === "Success" && res.items){
+        if(res.message === "Success" && res.items && res.items.length > 0){
             const itemsWithOCR = await ocr(res.items);
             await addPost(username, itemsWithOCR);
         }
@@ -155,15 +155,15 @@ export async function fetchSourcePosts(postIds) {
     }
 }
 
-export async function search(username, query){
-    const response = await fetch(`${process.env.VERCEL_URL}/api/python`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username: username, question: query, mode: "search"}),
-    }); 
-    const response_json = await response.json();
-    const posts = await fetchSourcePosts(response_json["post_ids"]);
-    return posts;
-}
+// export async function search(username, query){
+//     const response = await fetch(`${process.env.URL}/api/python`, {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({ username: username, question: query, mode: "search"}),
+//     }); 
+//     const response_json = await response.json();
+//     const posts = await fetchSourcePosts(response_json["post_ids"]);
+//     return posts;
+// }

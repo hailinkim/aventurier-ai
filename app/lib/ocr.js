@@ -73,6 +73,9 @@ const processImages = async (images) => {
 };
 
 export const ocr = async (feed) => {
+    if(!feed || feed.length === 0){
+        return [];
+    }
     const updatedFeed = [];
     for (const post of feed) {
         const images = post.carousel_media?.map(item => item.image_versions2?.candidates?.[0].url) || post.image_versions2?.candidates?.[0].url || null;
