@@ -26,7 +26,6 @@ export default function Chat({ params }) {
   const handleToggle = (mode) => {
     setSearchMode(mode);
     if(mode === 'search'){
-        console.log("hello");
         router.push(`/${params.username}/search/`);
     }
   };
