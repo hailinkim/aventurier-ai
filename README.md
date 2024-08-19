@@ -1,12 +1,70 @@
 # Aventeurier AI
 
-## Project Description
+## Overview
 
-Merchandisers at travel agencies often struggle to discover trendy and uncharted travel products. Social media platforms serve as a goldmine of travel trends and emerging destinations, offering valuable information for merchandisers. However, manually tracking social media posts is time-consuming and inefficient due to their transient nature and lack of structured data, leading to missed opportunities and outdated travel offerings.
+This project is a travel assistant that leverages user's saved Instagram post data to automate market research and generate on-trend travel itineraries.
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+## Features
 
-## Getting Started
+- **Semantic Search**: Efficiently retrieves relevant Instagram posts by understanding the context behind user queries and social media content, overcoming Instagram’s lack of a built-in search function.
+- **AI-Powered Chatbot**: Generates personalized travel itineraries and recommends on-trend places based on saved Instagram posts using Retrieval Augmented Generation (RAG).
+
+## Tech Stack
+
+- Frontend: Next.js, React, Tailwind CSS
+- Backend: Next.js, Flask API
+- Deployment: Vercel
+
+The Flask server is mapped into to Next.js app under /api/.
+This is implemented using `next.config.js` rewrites to map any request to /api/:path\* to the Flask API, which is hosted in the /api folder.
+On localhost, the rewrite will be made to the 127.0.0.1:5328 port, which is where the Flask server is running.
+In production, the Flask server is hosted as Python serverless functions on Vercel.
+
+### Key Technologies
+
+- Langchain - Used to implement LLM features, enabling advanced language processing and retrieval-augmented generation (RAG) within the chatbot.
+- [instagram-private-api](<(https://github.com/dilame/instagram-private-api)>): - A Node JS library that allows for the retrieval of Instagram posts and user data.
+- Upstage Document OCR API - Extract travel information embedded in images.
+- Solar Embeddings API - Embeds Instagram posts into a high-dimensional vector space for efficient retrieval.
+- Solar Chat API - Powers the AI chatbot with RAG
+- Upstage Groundedness Check API - Validates the alignment between AI's response and retrieved Instagram posts to cope with hallucination.
+- Google Maps API - Displays curated on-trend places on a map with detailed information such as address, rating, and photos.
+
+### Dependencies
+
+- Dependencies for Next.js and Node.js are managed via `package.json`.
+- Dependencies for Flask and related Python packages are managed via `Pipfile`.
+
+## Project Structure
+
+```bash
+.
+├── app/ (Next.js app)
+│   ├── [username]/
+│   │   ├── chat/ (API route for the chatbot feature)
+│   │   └── search/ (API route for the semantic search feature)
+│   ├── components/
+│   │   └── ... (UI components)
+│   ├── lib/
+│   │   └── ocr.js (Utility functions for OCR)
+|   |   └── ... (Other utility functions)
+
+│   └── ... (Next.js app files)
+│
+├── api/ (Flask API)
+│   ├── index.py (Entry point for the Flask app, initializes routes)
+│   ├── TravelAgent.py (Defines the TravelAgent class, encapsulating chatbot logic)
+│   └── Search.py (Performs semantic search using Upstage embeddings and MongoDB)
+│   └── ... (Other Flask app files)
+│
+├── package.json (Dependencies for Next.js)
+├── Pipfile (Dependencies for Flask)
+└── ... (Other configuration files)
+```
+
+## How to run the project
+
+This is a Next.js project that uses Flask as an API backend, so you need to have Node.js installed on your machine to run it. You can download Node.js from [here](https://nodejs.org/en/download/).
 
 First, run the development server:
 
@@ -22,21 +80,7 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+To demonstrate the app, you can use the sample Instagram account:
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- **Username:** `celine__lover`
+- **Password:** `Upstage1234`
