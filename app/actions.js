@@ -32,10 +32,12 @@ export const createSession = async (userId, sessionId) => {
 export const getSession = async (username) => {
     try{
         const sessionId = cookies().get(username)?.value;
+        console.log("sessionId: ", sessionId);
         if (sessionId) {
             const client = await initializeRedis();
             const sessionData = await client.get(sessionId);
             if(sessionData){
+                console.log('Session data found');
                 const session = JSON.parse(sessionData);
                 await ig.state.deserialize(session.state);
                 return true;
@@ -58,17 +60,15 @@ export const createCookies = async(username, sessionId) => {
 }
 
 async function fetchSavedFeed(username) {
+    let allItems = [];
     try{
         let savedFeed = ig.feed.saved();
-        let allItems = [];
         let moreAvailable = false;
         // let stopFetching = false;
-
         const user = await User.findOne({ username: username });
         if (!user) {
             throw new Error('User not found');
         }
-
         const existingPosts = await Post.find({ user: user._id }).select('postPk lastFetchDate');
         const existingPostMap = new Map(existingPosts.map(post => [post.postPk, post.lastFetchDate]));
 
@@ -81,7 +81,7 @@ async function fetchSavedFeed(username) {
 
                 if (existingPostMap.has(postPk)) {
                     const sevenDaysAgo = new Date();
-                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 5);
         
                     if (lastFetchDate && new Date(lastFetchDate) > sevenDaysAgo) {
                         return false; // Skip this item
@@ -102,7 +102,8 @@ async function fetchSavedFeed(username) {
 
         return { message: "Success", items: allItems };
     } catch(error) {
-        return { message: `Saved Feed Fetch Error: ${error.message}` };
+        console.log(error);
+        return { message: `Saved Feed Fetch Error: ${error.message}`, items: allItems };
     }
 }
 
@@ -111,6 +112,7 @@ export async function login(prevState, formData) {
         const username = formData.get('username');
         const password = formData.get('password');
         const sessionRestored = await getSession(username);
+        // const sessionRestored = false;
         if (!sessionRestored) {
             ig.state.generateDevice(username);
             await ig.simulate.preLoginFlow();
@@ -123,11 +125,15 @@ export async function login(prevState, formData) {
             await createCookies(username, sessionId);
             await createSession(userId, sessionId, ig);
         }
+        console.log("logged in")
         const res = await fetchSavedFeed(username);
-        if(res.message === "Success" && res.items && res.items.length > 0){
-            const itemsWithOCR = await ocr(res.items);
-            await addPost(username, itemsWithOCR);
+        if(res.items && res.items.length > 0){ //res.message === "Success" && 
+            await ocr(username, res.items);
+            // const itemsWithOCR = await ocr(res.items);
+            // console.log("add posts");
+            // await addPost(username, itemsWithOCR);
         }
+
         return { message: "Success", username: username};
     } catch (error) {
         return { message: error.message};
