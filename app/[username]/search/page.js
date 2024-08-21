@@ -38,7 +38,7 @@ const Search = React.memo(({ params }) => {
     const initializeFeed = async () => {
       try {
         const response = await fetchInitialFeed(username);
-        setFilteredPosts(response["initialFeed"]);
+        // setFilteredPosts(response["initialFeed"]);
         setAllPosts(response["initialFeed"]); 
       } catch (error) {
         console.error('Failed to fetch initial feed:', error);
