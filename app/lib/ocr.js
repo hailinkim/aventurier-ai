@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { urlToJPG } from './utils.js';
 import { Sema, RateLimit } from 'async-sema';
+import {addPost} from '@/db/addPost';
 
 var RPS = 5;
 
@@ -34,8 +35,8 @@ const processImagesParallel = async (images, concurrency) => {
     const sema = new Sema(concurrency);
     const rateLimit = RateLimit(RPS, { timeUnit: 1000 }); // Limit to 5 requests per second
     const results = [];
-    console.log(images);
-    console.log(images.length);
+    // console.log(images);
+    // console.log(images.length);
     const tasks = images.map(async (image) => {
         await sema.acquire();
         try {
@@ -76,28 +77,45 @@ const processImages = async (images) => {
     }
 };
 
-export const ocr = async (feed) => {
+export const ocr = async (username, feed) => {
     if(!feed || feed.length === 0){
         return [];
     }
-    const image_arr = [];
-    const updatedFeed = [];
+    // const updatedFeed = [];
+    let batch = [];
+    const batchSize = 5;
     for (const post of feed) {
         const images = post.carousel_media?.map(item => item.image_versions2?.candidates?.[0].url) || 
             [post.image_versions2?.candidates?.[0].url].filter(Boolean) || 
             [];
         if(images && images.length > 0){
-            image_arr
             const ocrResults = await processImagesParallel(images, RPS);
             if(ocrResults.length === 0){
+                console.log("No OCR results found for post");
                 continue;
             }
             const postJSON = JSON.parse(JSON.stringify(post));
             postJSON.caption = postJSON.caption || {};
             postJSON.caption.text = postJSON.caption.text || '';
             postJSON.caption.text = postJSON.caption.text.concat('\n', ocrResults);
-            updatedFeed.push(postJSON);
+            // updatedFeed.push(postJSON);
+            batch.push(postJSON);
+
+            // If the batch size is reached, call addPost and clear the batch
+            if (batch.length >= batchSize) {
+                console.log(`Adding ${batch.length} posts in batch`);
+                await addPost(username, batch);
+                batch = []; // Clear the batch
+            }
         }
     }
-    return updatedFeed;
+    if (batch.length > 0) {
+        console.log(`Adding remaining ${batch.length} posts in batch`);
+        await addPost(username, batch);
+    }
+    // if(updatedFeed && updatedFeed.length > 0){
+    //     console.log("add posts");
+    //     await addPost(username, itemsWithOCR);
+    // }
+    // return updatedFeed;
 };
