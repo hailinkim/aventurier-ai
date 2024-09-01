@@ -21,7 +21,7 @@ def load_documents(username):
     user = user_collection.find_one({'username': username}, {"_id": 1})
 
     DB_NAME = "langchain_db"
-    COLLECTION_NAME = "test"
+    COLLECTION_NAME = "test_openai"
     langchain_db = client[DB_NAME]
     vectorstore = langchain_db[COLLECTION_NAME]
 
@@ -93,9 +93,8 @@ def load_documents(username):
             for post in posts:
                 found = vectorstore.find_one({"post_id":str(post["_id"])})
                 # add to futures only if the post is not found in the vector store and the caption is not empty
-                if not found and not (post['caption'] is None or post['caption'] != ""):
+                if not found and not (post['caption'] is None or post['caption'] == ""):
                     futures.append(executor.submit(process_post, post))
-
             for future in concurrent.futures.as_completed(futures):
                 result = future.result()
                 if result is not None:
