@@ -6,7 +6,7 @@ Aventurier AI is a travel assistant that leverages user's saved Instagram post d
 
 ## Features
 
-- **Semantic Search**: Efficiently retrieves relevant Instagram posts by understanding the context behind user queries and social media content, overcoming Instagram’s lack of a built-in search function.
+- **Semantic Search**: Retrieves relevant posts from a user's bookmarked list by understanding and matching the context of the user's query, rather than relying solely on keyword matching. Developed to overcome Instagram’s lack of a built-in search function for saved posts.
 - **AI-Powered Chatbot**: Generates personalized travel itineraries and recommends on-trend places based on saved Instagram posts using Retrieval Augmented Generation (RAG).
 
 ## Tech Stack
