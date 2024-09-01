@@ -29,7 +29,8 @@
     "react-intersection-observer": "^9.13.0",
     "react-responsive": "^10.0.0",
     "redis": "^4.6.15",
-    "sema": "^2.0.3"
+    "sema": "^2.0.3",
+    "socks-proxy-agent": "^8.0.4"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
