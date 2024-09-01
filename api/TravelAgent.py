@@ -1,16 +1,17 @@
 # import sys
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '/api/lib')))
 from langchain.prompts import ChatPromptTemplate
-from langchain_upstage import UpstageEmbeddings, ChatUpstage
+# from langchain_upstage import UpstageEmbeddings, ChatUpstage
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from typing import TypedDict, Literal, List
 from pymongo.mongo_client import MongoClient
 from langchain_mongodb import MongoDBAtlasVectorSearch
+from pymongo.errors import BulkWriteError
 import os 
 from dotenv import load_dotenv 
 from langchain.chains import create_history_aware_retriever
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from pymongo.errors import BulkWriteError
 import time
 import json
 import logging
@@ -26,30 +27,32 @@ os.environ["UPSTAGE_API_KEY"] = os.getenv("UPSTAGE_API_KEY")
 os.environ["MONGODB_ATLAS_CLUSTER_URI"] = os.getenv("NEXT_PUBLIC_MONGO_URI")
 client = MongoClient(os.environ["MONGODB_ATLAS_CLUSTER_URI"]) 
 DB_NAME = "langchain_db"
-COLLECTION_NAME = "test"
+COLLECTION_NAME = "test_openai"
 ATLAS_VECTOR_SEARCH_INDEX_NAME = "vector_index"
 db = client[DB_NAME]
 collection = db[COLLECTION_NAME]
 
 # Define the class to wrap the logic as an agent
 class TravelAgent:
-    def __init__(self, username):
-        self.llm = ChatUpstage(temperature=0.3)
+    def __init__(self):
+        self.llm = ChatOpenAI(model="gpt-4o", temperature=0.3)
         self.vectorstore = MongoDBAtlasVectorSearch(
             collection=collection,
-            embedding=UpstageEmbeddings(model="solar-embedding-1-large"),
+            embedding=OpenAIEmbeddings(model="text-embedding-3-small"),
+            # embedding=UpstageEmbeddings(model="solar-embedding-1-large"),
             index_name=ATLAS_VECTOR_SEARCH_INDEX_NAME,
             relevance_score_fn="cosine"
         )
-        start_time = time.time()
-        documents, document_ids = load_documents(username)
-        matching_count = collection.count_documents({"_id": {"$in": document_ids}})
-        if matching_count != len(document_ids):
-            try:
-                self.vectorstore.add_documents(documents=documents, ids=document_ids)
-            except BulkWriteError as e:
-                pass
-                logging.error(e.details)
+        # start_time = time.time()
+        # documents, document_ids = load_documents(username)
+        # # Check if the documents are already in the vector store
+        # # matching_count = collection.count_documents({"_id": {"$in": document_ids}})
+        # # if matching_count != len(document_ids):
+        # try:
+        #     self.vectorstore.add_documents(documents=documents, ids=document_ids)
+        # except BulkWriteError as e:
+        #     pass
+        #     logging.error(e.details)
         # print("Time taken for adding documents to the vector store: ", time.time() - start_time)
 
         retriever = self.vectorstore.as_retriever(
